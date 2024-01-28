@@ -10,7 +10,7 @@
 #define INPUT_FILE "sample.txt"
 #define OUTPUT_FILE "received_file.txt"
 
-void dieWithError(const char *errorMessage)
+void errorHandling(const char *errorMessage)
 {
     perror(errorMessage);
     exit(EXIT_FAILURE);
@@ -21,7 +21,7 @@ int createUDPSocket()
     int clientSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (clientSocket == -1)
     {
-        dieWithError("Error creating socket");
+        errorHandling("Error creating socket");
     }
 
     printf("Client socket created successfully\n");
@@ -32,7 +32,9 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
 {
     memset(serverAddress, 0, sizeof(*serverAddress));
     serverAddress->sin_family = AF_INET;
-    serverAddress->sin_addr.s_addr = inet_addr(IP);
+    // serverAddress->sin_addr.s_addr = inet_addr(IP);
+    if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0)
+        errorHandling("Invalid address");
     serverAddress->sin_port = htons(PORT);
 }
 
@@ -43,7 +45,7 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress)
     FILE *file = fopen(filename, "rb");
     if (file == NULL)
     {
-        dieWithError("Error in opening file");
+        errorHandling("Error in opening file");
     }
 
     // print the filename
@@ -51,10 +53,9 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress)
 
     if (sendto(clientSocket, filename, strlen(filename), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
-        perror("Error sending data");
         fclose(file);
         close(clientSocket);
-        exit(EXIT_FAILURE);
+        errorHandling("Error sending filename");
     }
 
     while (1)
@@ -71,10 +72,9 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress)
 
         if (send_len < 0)
         {
-            perror("Error sending data");
             fclose(file);
             close(clientSocket);
-            exit(EXIT_FAILURE);
+            errorHandling("Error sending data");
         }
         else
         {
@@ -87,9 +87,8 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress)
     // Send an empty message to the server to indicate the end of file
     if (sendto(clientSocket, "", 0, 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
-        perror("Error sending data");
         close(clientSocket);
-        exit(EXIT_FAILURE);
+        errorHandling("Error sending data");
     }
     else
     {

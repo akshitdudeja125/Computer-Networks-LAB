@@ -10,7 +10,7 @@
 
 #define OUTPUT_FILE_TEMPLATE "received_file_%d.txt"
 
-void dieWithError(const char *errorMessage)
+void errorHandling(const char *errorMessage)
 {
     perror(errorMessage);
     exit(EXIT_FAILURE);
@@ -21,7 +21,7 @@ int createUDPSocket()
     int serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (serverSocket == -1)
     {
-        dieWithError("Error creating socket");
+        errorHandling("Error creating socket");
     }
 
     printf("Server socket created successfully\n");
@@ -36,7 +36,7 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
 
     if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0)
     {
-        dieWithError("Invalid address");
+        errorHandling("Invalid address");
     }
 }
 
@@ -44,7 +44,7 @@ void bindSocket(int serverSocket, const struct sockaddr *serverAddress)
 {
     if (bind(serverSocket, serverAddress, sizeof(*serverAddress)) < 0)
     {
-        dieWithError("Error binding socket");
+        errorHandling("Error binding socket");
     }
 
     printf("Server bound to port %d\n", PORT);
@@ -53,7 +53,7 @@ void bindSocket(int serverSocket, const struct sockaddr *serverAddress)
 void receiveFile(int serverSocket)
 {
 
-    // Recieve " " from client to indicate start of file transfer
+    // Recieve file name from client to indicate start of file transfer
     char buffer[MAX_BUFFER_SIZE];
     struct sockaddr_in clientAddress;
     socklen_t client_address_len = sizeof(clientAddress);
@@ -62,11 +62,11 @@ void receiveFile(int serverSocket)
 
     if (recv_len < 0)
     {
-        dieWithError("Error receiving data");
+        errorHandling("Error receiving data");
     }
     else if (recv_len == 0)
     {
-        dieWithError("Client disconnected");
+        errorHandling("Client disconnected");
     }
 
     char *fileName = buffer;
@@ -81,7 +81,7 @@ void receiveFile(int serverSocket)
     FILE *file = fopen(outputFilename, "wb");
     if (file == NULL)
     {
-        dieWithError("Error opening file for writing");
+        errorHandling("Error opening file for writing");
     }
 
     while (1)
@@ -91,13 +91,13 @@ void receiveFile(int serverSocket)
 
         if (recv_len < 0)
         {
-            dieWithError("Error receiving data");
+            errorHandling("Error receiving data");
             break;
         }
 
         if (recv_len == 0)
         {
-            dieWithError("Client disconnected");
+            errorHandling("Client disconnected");
             break; // End of file
         }
 
