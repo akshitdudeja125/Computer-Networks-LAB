@@ -8,7 +8,7 @@
 #define IP "10.10.88.233"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
-#define INPUT_FOLDER_PATH "client_files"
+#define INPUT_FOLDER_PATH "client_files_1"
 
 void dieWithError(const char *errorMessage)
 {
@@ -58,15 +58,16 @@ const char *extractFileName(const char *filePath)
     return fileName;
 }
 
-void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress, const char *filePath)
+void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress, const char *filePath, const char *fileName)
 {
     FILE *file = fopen(filePath, "rb");
     if (file == NULL)
         dieWithError("Error opening file");
 
-    const char *fileName = extractFileName(filePath);
+    // const char *fileName = extractFileName(filePath);
     printf("Sending file name: %s\n", fileName);
 
+    // Sending the file name to the server
     if (sendto(clientSocket, fileName, strlen(fileName), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
         perror("Error sending data");
@@ -121,16 +122,16 @@ void sendFolderThroughSocket(int clientSocket, struct sockaddr_in serverAddress,
         dieWithError("Error opening folder");
     }
 
-    // Send the directory name to the server
-    if (sendto(clientSocket, folderPath, strlen(folderPath), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-    {
-        perror("Error sending data");
-        closedir(dir);
-        close(clientSocket);
-        exit(EXIT_FAILURE);
-    }
-    // print the folder name
-    printf("Sending folder name: %s\n", folderPath);
+    // // Send the directory name to the server
+    // if (sendto(clientSocket, folderPath, strlen(folderPath), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    // {
+    //     perror("Error sending data");
+    //     closedir(dir);
+    //     close(clientSocket);
+    //     exit(EXIT_FAILURE);
+    // }
+    // // print the folder name
+    // printf("Sending folder name: %s\n", folderPath);
 
     while ((entry = readdir(dir)) != NULL)
     {
@@ -138,7 +139,7 @@ void sendFolderThroughSocket(int clientSocket, struct sockaddr_in serverAddress,
         {
             char filePath[MAX_BUFFER_SIZE];
             snprintf(filePath, sizeof(filePath) - 1, "%s/%s", folderPath, entry->d_name);
-            sendFileThroughSocket(clientSocket, serverAddress, filePath);
+            sendFileThroughSocket(clientSocket, serverAddress, filePath, entry->d_name);
         }
     }
 
@@ -149,6 +150,10 @@ void sendFolderThroughSocket(int clientSocket, struct sockaddr_in serverAddress,
         closedir(dir);
         close(clientSocket);
         exit(EXIT_FAILURE);
+    }
+    else
+    {
+        printf("End of folder transfer\n");
     }
 
     closedir(dir);
