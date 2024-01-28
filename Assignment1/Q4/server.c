@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#define IP "127.0.0.1"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define OUTPUT_FOLDER_PATH "recieved_files"
@@ -33,7 +34,12 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
     memset(serverAddress, 0, sizeof(*serverAddress));
     serverAddress->sin_family = AF_INET;
     serverAddress->sin_port = htons(PORT);
-    serverAddress->sin_addr.s_addr = INADDR_ANY;
+    // serverAddress->sin_addr.s_addr = INADDR_ANY;
+    if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0)
+    {
+        perror("Invalid address");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void bindSocket(int serverSocket, const struct sockaddr *serverAddress)

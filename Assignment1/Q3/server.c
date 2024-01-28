@@ -6,7 +6,7 @@
 
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
-#define IP "10.10.88.233"
+#define IP "127.0.0.1"
 
 #define OUTPUT_FILE_TEMPLATE "received_file_%d.txt"
 
@@ -69,6 +69,7 @@ void receiveFile(int serverSocket)
         errorHandling("Client disconnected");
     }
 
+    buffer[recv_len] = '\0';
     char *fileName = buffer;
 
     printf("Receiving file: %s\n", fileName);

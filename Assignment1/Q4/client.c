@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#define IP "10.10.88.233"
+#define IP "127.0.0.1"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define INPUT_FOLDER_PATH "client_files"
@@ -32,7 +32,12 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
 {
     memset(serverAddress, 0, sizeof(*serverAddress));
     serverAddress->sin_family = AF_INET;
-    serverAddress->sin_addr.s_addr = inet_addr(IP);
+    // serverAddress->sin_addr.s_addr = inet_addr(IP);
+    if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0)
+    {
+        perror("Invalid address");
+        exit(EXIT_FAILURE);
+    }
     serverAddress->sin_port = htons(PORT);
 }
 

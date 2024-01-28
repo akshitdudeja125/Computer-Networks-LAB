@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define IP "10.10.88.233"
+#define IP "127.0.0.1"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define INPUT_FILE "sample.txt"
