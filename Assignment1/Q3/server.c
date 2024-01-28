@@ -6,7 +6,7 @@
 
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
-#define IP "127.0.0.1"
+#define IP "10.10.88.233"
 
 #define OUTPUT_FILE_TEMPLATE "received_file_%d.txt"
 
@@ -21,7 +21,7 @@ int createUDPSocket()
     int serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (serverSocket == -1)
     {
-        errorHandling("Error creating socket");
+        errorHandling("Error creating socket\n");
     }
 
     printf("Server socket created successfully\n");
@@ -58,7 +58,7 @@ void receiveFile(int serverSocket)
     struct sockaddr_in clientAddress;
     socklen_t client_address_len = sizeof(clientAddress);
 
-    ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &client_address_len);
+    ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&clientAddress, &client_address_len);
 
     if (recv_len < 0)
     {
@@ -88,8 +88,9 @@ void receiveFile(int serverSocket)
     while (1)
     {
         char buffer[MAX_BUFFER_SIZE];
-        ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &client_address_len);
-
+        ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&clientAddress, &client_address_len);
+        buffer[recv_len] = '\0';
+        printf("%d\n", recv_len);
         if (recv_len < 0)
         {
             errorHandling("Error receiving data");
@@ -98,7 +99,7 @@ void receiveFile(int serverSocket)
 
         if (recv_len == 0)
         {
-            errorHandling("Client disconnected");
+            printf("Client disconnected");
             break; // End of file
         }
 

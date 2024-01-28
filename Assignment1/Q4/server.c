@@ -6,7 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define IP "127.0.0.1"
+#define IP "10.10.88.233"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define OUTPUT_FOLDER_PATH "recieved_files"
@@ -52,54 +52,64 @@ void bindSocket(int serverSocket, const struct sockaddr *serverAddress)
     printf("Server bound to port %d\n", PORT);
 }
 
-void receiveFile(int serverSocket, const char *outputFolderPath)
+void recieveFiles(int serverSocket, const char *outputFolderPath)
 {
-    char buffer[MAX_BUFFER_SIZE];
-    struct sockaddr_in clientAddress;
-    socklen_t client_address_len = sizeof(clientAddress);
-
-    // Receive the filename from the client
-    ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &client_address_len);
-    if (recv_len < 0)
-    {
-        dieWithError("Error receiving data");
-    }
-
-    buffer[recv_len] = '\0';
-    printf("Receiving file: %s\n", buffer);
-
-    char outputFilename[MAX_BUFFER_SIZE];
-    snprintf(outputFilename, sizeof(outputFilename), "%s/%s", outputFolderPath, buffer);
-    printf("Output file: %s\n", outputFilename);
-
-    FILE *file = fopen(outputFilename, "wb");
-    if (file == NULL)
-        dieWithError("Error opening file for writing");
-
     while (1)
     {
-        recv_len = recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &client_address_len);
+
+        char buffer[MAX_BUFFER_SIZE];
+        struct sockaddr_in clientAddress;
+        socklen_t client_address_len = sizeof(clientAddress);
+
+        // Receive the filename from the client
+        ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&clientAddress, &client_address_len);
         if (recv_len < 0)
         {
             dieWithError("Error receiving data");
         }
 
-        if (recv_len == 0)
+        buffer[recv_len] = '\0';
+        printf("Receiving file: %s\n", buffer);
+
+        // check if "" is recieved then break
+        if (strcmp(buffer, "") == 0)
         {
-            break; // End of file
+            return;
         }
 
-        fwrite(buffer, 1, recv_len, file);
-    }
+        char outputFilename[MAX_BUFFER_SIZE];
+        snprintf(outputFilename, sizeof(outputFilename) - 1, "%s/%s", outputFolderPath, buffer);
+        printf("Output file: %s\n", outputFilename);
 
-    fclose(file);
-    printf("File received successfully: %s\n", outputFilename);
+        FILE *file = fopen(outputFilename, "wb");
+        if (file == NULL)
+            dieWithError("Error opening file for writing");
+
+        while (1)
+        {
+            recv_len = recvfrom(serverSocket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&clientAddress, &client_address_len);
+            if (recv_len < 0)
+            {
+                dieWithError("Error receiving data");
+            }
+
+            if (recv_len == 0)
+            {
+                break; // End of file
+            }
+
+            fwrite(buffer, 1, recv_len, file);
+        }
+
+        fclose(file);
+        printf("File received successfully: %s\n", outputFilename);
+    }
 }
 
 void receiveFolder(int serverSocket, const char *outputFolderPath)
 {
     DIR *outputFolder = opendir(outputFolderPath);
-    if (outputFolder == NULL && mkdir(outputFolderPath, 0777) != 0)
+    if (outputFolder == NULL && mkdir(outputFolderPath, 0777) != 0) // 0777:read,write and execute permissions for user,group and others
     {
         dieWithError("Error creating output folder");
     }
@@ -111,10 +121,42 @@ void receiveFolder(int serverSocket, const char *outputFolderPath)
         }
     }
 
-    while (1)
+    // recieve the folder name
+    char buffer[MAX_BUFFER_SIZE];
+    struct sockaddr_in clientAddress;
+    socklen_t client_address_len = sizeof(clientAddress);
+
+    ssize_t recv_len = recvfrom(serverSocket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&clientAddress, &client_address_len);
+    if (recv_len < 0)
     {
-        receiveFile(serverSocket, outputFolderPath);
+        dieWithError("Error receiving data");
     }
+
+    buffer[recv_len] = '\0';
+    printf("Receiving folder: %s\n", buffer);
+
+    // inside output folder create a folder with the name recieved
+    char outputFolderName[MAX_BUFFER_SIZE];
+    snprintf(outputFolderName, sizeof(outputFolderName) - 1, "%s/%s", outputFolderPath, buffer);
+    printf("Output folder: %s\n", outputFolderName);
+
+    DIR *outputFolderNameDir = opendir(outputFolderName);
+
+    if (outputFolderNameDir == NULL && mkdir(outputFolderName, 0777) != 0) //
+    {
+        dieWithError("Error creating output folder");
+    }
+    else
+    {
+        if (outputFolderNameDir != NULL)
+        {
+            closedir(outputFolderNameDir);
+        }
+    }
+
+    recieveFiles(serverSocket, outputFolderName);
+
+    printf("All files received\n");
 }
 
 int main()
@@ -128,7 +170,8 @@ int main()
     bindSocket(serverSocket, (struct sockaddr *)&serverAddress);
 
     // Receive the entire folder from the client
-    receiveFolder(serverSocket, OUTPUT_FOLDER_PATH);
+    while (1)
+        receiveFolder(serverSocket, OUTPUT_FOLDER_PATH);
 
     close(serverSocket);
 

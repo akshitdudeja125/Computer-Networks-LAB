@@ -7,9 +7,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define SERVER_IP "127.0.0.1"
-// #define IP "10.10.88.233"
-int SERVER_PORT[] = {8080, 8081};
+// #define SERVER_IP "127.0.0.1"
+#define SERVER_IP "10.10.88.233"
+int SERVER_PORT[] = {8080, 8081, 8082, 8083, 8084};
 int NUM_SERVERS = sizeof(SERVER_PORT) / sizeof(SERVER_PORT[0]);
 #define MESSAGE_INTERVAL_SECONDS 2
 #define NUM_MESSAGES 5
@@ -53,7 +53,7 @@ void *send_message(void *args)
             handle_error("Error sending data to server");
         }
 
-        printf("Sent message to server %s:%d - Sequence Number: %d\n",
+        printf("Sent message to server %s:%d - Sequence Number: %d\n\n",
                inet_ntoa(server_address.sin_addr), ntohs(server_address.sin_port), seq_num);
 
         char buffer[MAX_BUFFER_SIZE];
