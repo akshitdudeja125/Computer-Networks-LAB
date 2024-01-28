@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#define IP "127.0.0.1"
+#define IP "10.10.88.233"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define INPUT_FOLDER_PATH "client_files"
@@ -78,7 +78,7 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress, c
     while (1)
     {
         char buffer[MAX_BUFFER_SIZE];
-        size_t read_len = fread(buffer, 1, sizeof(buffer), file);
+        size_t read_len = fread(buffer, 1, sizeof(buffer) - 1, file);
 
         if (read_len <= 0)
         {
@@ -121,14 +121,34 @@ void sendFolderThroughSocket(int clientSocket, struct sockaddr_in serverAddress,
         dieWithError("Error opening folder");
     }
 
+    // Send the directory name to the server
+    if (sendto(clientSocket, folderPath, strlen(folderPath), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    {
+        perror("Error sending data");
+        closedir(dir);
+        close(clientSocket);
+        exit(EXIT_FAILURE);
+    }
+    // print the folder name
+    printf("Sending folder name: %s\n", folderPath);
+
     while ((entry = readdir(dir)) != NULL)
     {
         if (entry->d_type == DT_REG)
         {
             char filePath[MAX_BUFFER_SIZE];
-            snprintf(filePath, sizeof(filePath), "%s/%s", folderPath, entry->d_name);
+            snprintf(filePath, sizeof(filePath) - 1, "%s/%s", folderPath, entry->d_name);
             sendFileThroughSocket(clientSocket, serverAddress, filePath);
         }
+    }
+
+    // send an end of folder transfer
+    if (sendto(clientSocket, "", 0, 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    {
+        perror("Error sending data");
+        closedir(dir);
+        close(clientSocket);
+        exit(EXIT_FAILURE);
     }
 
     closedir(dir);

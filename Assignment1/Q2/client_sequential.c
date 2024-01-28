@@ -6,7 +6,8 @@
 
 #define MAX_BUFFER_SIZE 1024
 #define NUM_MESSAGES 5
-#define SERVER_IP "127.0.0.1"
+// #define SERVER_IP "127.0.0.1"
+#define SERVER_IP "10.10.88.233"
 
 // Function to handle errors
 void handle_error(const char *message)

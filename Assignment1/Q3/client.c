@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define IP "127.0.0.1"
+#define IP "10.10.88.233"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define INPUT_FILE "sample.txt"
@@ -61,7 +61,7 @@ void sendFileThroughSocket(int clientSocket, struct sockaddr_in serverAddress)
     while (1)
     {
         char buffer[MAX_BUFFER_SIZE];
-        size_t read_len = fread(buffer, 1, sizeof(buffer), file);
+        size_t read_len = fread(buffer, 1, sizeof(buffer) - 1, file);
 
         if (read_len <= 0)
         {
