@@ -50,6 +50,7 @@ int main()
     if (bind_desc == -1)
     {
         perror("Could not bind to server address");
+        printf("Error code: %d\n", errno);
         exit(EXIT_FAILURE);
     }
     else
