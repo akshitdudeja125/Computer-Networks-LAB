@@ -6,7 +6,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define IP "10.10.88.233"
+#define IP "10.10.151.28"
+// #define IP "127.0.0.1"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 2048
 #define OUTPUT_FOLDER_PATH "recieved_files"
@@ -19,7 +20,7 @@ void dieWithError(const char *errorMessage)
 
 int createUDPSocket()
 {
-    int serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    int serverSocket = socket(AF_INET, SOCK_DGRAM, 0); // Internetwork(TCP,UDP)//Data socket //Default address
     if (serverSocket == -1)
     {
         dieWithError("Error creating socket");
@@ -33,9 +34,9 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
 {
     memset(serverAddress, 0, sizeof(*serverAddress));
     serverAddress->sin_family = AF_INET;
-    serverAddress->sin_port = htons(PORT);
+    serverAddress->sin_port = htons(PORT); // htons converts host byte order to network byte order
     // serverAddress->sin_addr.s_addr = INADDR_ANY;
-    if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0)
+    if (inet_pton(AF_INET, IP, &(serverAddress->sin_addr)) <= 0) // Convert IPv4 and IPv6 addresses from text to binary form
     {
         perror("Invalid address");
         exit(EXIT_FAILURE);
@@ -44,6 +45,7 @@ void setupServerAddress(struct sockaddr_in *serverAddress)
 
 void bindSocket(int serverSocket, const struct sockaddr *serverAddress)
 {
+    // This is the server's socket, so we need to bind it to a specific port number
     if (bind(serverSocket, serverAddress, sizeof(*serverAddress)) < 0)
     {
         dieWithError("Error binding socket");
