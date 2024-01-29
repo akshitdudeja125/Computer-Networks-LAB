@@ -42,4 +42,13 @@ int main()
     return 0;
 }
 
+// Server side error codes
+
 // Error code 99 corresponds to the EADDRNOTAVAIL error.This error code indicates that the requested address is not available on the machine.
+
+// Error binding to the specified IP address : Can't assign requested address Error code : 49
+// Error binding to the reserved port : Permission denied Error code : 13
+
+// Socket created successfully
+// Could not bind to server address: Address already in use
+// Error code: 98
