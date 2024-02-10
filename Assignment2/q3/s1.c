@@ -5,9 +5,9 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
-#define PORT 8080
+#define PORT 8085
 #define MAX_BUFFER_SIZE 1024
-#define IP "10.10.88.233"
+#define IP "127.0.0.1"
 
 #define OUTPUT_FILE_TEMPLATE "received_file_%d.txt"
 
