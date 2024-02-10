@@ -6,7 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define IP "10.10.88.233"
+#define IP "10.10.151.28"
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define OUTPUT_FOLDER_PATH "recieved_files"

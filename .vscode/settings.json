@@ -42,6 +42,9 @@
         "stdio.h": "c",
         "stdlib.h": "c",
         "fcntl.h": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "inet.h": "c",
+        "dirent.h": "c",
+        "__locale": "c"
     }
 }

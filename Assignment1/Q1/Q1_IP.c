@@ -52,3 +52,5 @@ int main()
 // Socket created successfully
 // Could not bind to server address: Address already in use
 // Error code: 98
+
+// Error code : 101 Error sending message : Network is unreachable
