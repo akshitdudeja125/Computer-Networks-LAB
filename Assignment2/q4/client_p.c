@@ -15,6 +15,7 @@
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
 #define FOLDER_PATH "client_files"
+#define SLEEP_TIME 1
 
 void *send_file(void *filename)
 {
@@ -54,7 +55,7 @@ void *send_file(void *filename)
         pthread_exit(NULL);
     }
 
-    sleep(1);
+    sleep(SLEEP_TIME);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -159,10 +160,12 @@ int main()
     double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
-    printf("Time taken to send all files: %.6f seconds\n", time_taken - 1);
+    printf("Time taken to send all files: %.6f seconds\n", time_taken - SLEEP_TIME);
 
     return 0;
 }
+
+// ************** Using fork() **************
 
 // #include <stdio.h>
 // #include <stdlib.h>
@@ -173,12 +176,14 @@ int main()
 // #include <sys/socket.h>
 // #include <sys/types.h>
 // #include <dirent.h>
+// #include <sys/time.h>
 
 // #define PORT 8085
 // #define MAX_FILENAME_LEN 256
 // #define MAX_BUFFER_SIZE 1024
 // #define IP "127.0.0.1"
 // #define FOLDER_PATH "client_files"
+// #define SLEEP_TIME 1
 
 // void send_file(const char *filename)
 // {
@@ -186,7 +191,6 @@ int main()
 //     int sock_fd;
 //     struct sockaddr_in server_addr;
 //     ssize_t bytes_sent;
-//     char buffer[MAX_BUFFER_SIZE];
 
 //     // Connect to server
 //     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -211,12 +215,14 @@ int main()
 //     }
 
 //     // Send filename
-//     if ((bytes_sent = send(sock_fd, filename, strlen(filename), 0)) == -1)
+//     if (send(sock_fd, filename, strlen(filename), 0) == -1)
 //     {
 //         perror("Send failed");
 //         close(sock_fd);
 //         exit(EXIT_FAILURE);
 //     }
+
+//     sleep(SLEEP_TIME);
 
 //     // Open file
 //     char filePath[MAX_BUFFER_SIZE];
@@ -231,15 +237,20 @@ int main()
 //     }
 
 //     // Send file data
-//     while (!feof(fptr))
+//     while (1)
 //     {
-//         size_t bytes_read = fread(buffer, 1, MAX_BUFFER_SIZE, fptr);
-//         if (bytes_read == -1)
+//         char buffer[MAX_BUFFER_SIZE];
+//         size_t bytes_read = fread(buffer, 1, sizeof(buffer), fptr);
+//         if (bytes_read < 0)
 //         {
 //             perror("File read failed");
 //             fclose(fptr);
 //             close(sock_fd);
 //             exit(EXIT_FAILURE);
+//         }
+//         if (bytes_read == 0)
+//         {
+//             break;
 //         }
 //         if (send(sock_fd, buffer, bytes_read, 0) == -1)
 //         {
@@ -255,12 +266,18 @@ int main()
 //     close(sock_fd);
 
 //     printf("File sent successfully: %s\n", filename);
+
+//     exit(EXIT_SUCCESS);
 // }
 
 // int main()
 // {
 //     DIR *dir;
 //     struct dirent *entry;
+
+//     // Start time measurement
+//     struct timeval start, end;
+//     gettimeofday(&start, NULL);
 
 //     // Open directory
 //     if ((dir = opendir(FOLDER_PATH)) == NULL)
@@ -269,30 +286,53 @@ int main()
 //         exit(EXIT_FAILURE);
 //     }
 
-//     // Send files in parallel
+//     int num_files = 0;
+
+//     // Count number of files
+//     while ((entry = readdir(dir)) != NULL)
+//     {
+//         if (entry->d_type == DT_REG)
+//             num_files++;
+//     }
+
+//     printf("Number of files to send: %d\n", num_files);
+
+//     // Fork processes to send files
+//     rewinddir(dir);
+
 //     while ((entry = readdir(dir)) != NULL)
 //     {
 //         if (entry->d_type == DT_REG)
 //         {
-//             // Fork a child process to send each file
-//             pid_t child_pid = fork();
-//             if (child_pid == -1)
+//             char *filename = entry->d_name;
+//             pid_t pid = fork();
+//             if (pid == -1)
 //             {
 //                 perror("Fork failed");
 //                 continue;
 //             }
-//             else if (child_pid == 0)
+//             else if (pid == 0) // Child process
 //             {
-//                 // Child process
-//                 char *filename = entry->d_name;
 //                 send_file(filename);
-//                 exit(EXIT_SUCCESS);
 //             }
-//             // Parent process continues to fork new child processes
 //         }
 //     }
 
 //     closedir(dir);
+
+//     // Wait for all child processes to finish
+//     int status;
+//     for (int i = 0; i < num_files; i++)
+//     {
+//         wait(&status);
+//     }
+
+//     // End time measurement
+//     gettimeofday(&end, NULL);
+//     double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
+//     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
+
+//     printf("Time taken to send all files: %.6f seconds\n", time_taken - SLEEP_TIME);
 
 //     return 0;
 // }

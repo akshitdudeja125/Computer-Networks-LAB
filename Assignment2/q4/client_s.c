@@ -14,6 +14,7 @@
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
 #define FOLDER_PATH "client_files"
+#define SLEEP_TIME 1
 
 int send_file(const char *filename)
 {
@@ -29,7 +30,6 @@ int send_file(const char *filename)
         return -1;
     }
 
-    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     if (inet_pton(AF_INET, IP, &(server_addr.sin_addr)) <= 0)
@@ -53,7 +53,7 @@ int send_file(const char *filename)
         return -1;
     }
 
-    sleep(1);
+    sleep(SLEEP_TIME);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -137,7 +137,7 @@ int main()
     gettimeofday(&end_time, NULL); // End the timer
 
     total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
-    printf("Total time taken: %.6f seconds\n", total_time - count_files);
+    printf("Total time taken: %.6f seconds\n", total_time - (count_files * SLEEP_TIME));
 
     return 0;
 }
