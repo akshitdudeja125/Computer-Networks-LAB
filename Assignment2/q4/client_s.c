@@ -117,13 +117,14 @@ int main()
         perror("Failed to open directory");
         exit(EXIT_FAILURE);
     }
-
+    int count_files = 0;
     // Send files sequentially
     while ((entry = readdir(dir)) != NULL)
     {
         if (entry->d_type == DT_REG)
         {
             char *filename = entry->d_name;
+            count_files++;
             if (send_file(filename) == -1)
             {
                 printf("Failed to send file: %s\n", filename);
@@ -136,7 +137,7 @@ int main()
     gettimeofday(&end_time, NULL); // End the timer
 
     total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
-    printf("Total time taken: %.6f seconds\n", total_time);
+    printf("Total time taken: %.6f seconds\n", total_time - count_files);
 
     return 0;
 }
