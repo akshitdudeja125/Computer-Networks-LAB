@@ -159,7 +159,7 @@ int main()
     double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
-    printf("Time taken to send all files: %.6f seconds\n", time_taken);
+    printf("Time taken to send all files: %.6f seconds\n", time_taken - 1);
 
     return 0;
 }

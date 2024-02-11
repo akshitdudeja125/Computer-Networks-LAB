@@ -8,12 +8,13 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define PORT 8085
 #define MAX_CONN 10
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
-#define IP "127.0.0.1"
+#define IP "10.10.88.233"
 #define RECEIVED_FILES_FOLDER "received_files"
 
 void *handle_connection(void *sock_fd)
