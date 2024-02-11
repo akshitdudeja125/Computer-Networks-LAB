@@ -90,11 +90,16 @@ void *handle_client(void *arg)
     ssize_t bytes_received;
 
     DIR *dir;
-    struct dirent *entry;
 
     if ((dir = opendir(RECEIVED_FILES_FOLDER)) == NULL)
     {
-        mkdir(RECEIVED_FILES_FOLDER, 0777);
+        // mkdir(RECEIVED_FILES_FOLDER, 0777);
+        if (mkdir(RECEIVED_FILES_FOLDER, 0777) == -1)
+        {
+            perror("Failed to open directory");
+            close(client_socket);
+            pthread_exit(NULL);
+        }
     }
     else
     {
@@ -103,7 +108,7 @@ void *handle_client(void *arg)
 
     // Receive filename
     char filename[BUFFER_SIZE];
-    memset(filename, 0, BUFFER_SIZE);
+
     bytes_received = recv(client_socket, filename, BUFFER_SIZE, 0);
     if (bytes_received < 0)
     {
@@ -143,16 +148,18 @@ void *handle_client(void *arg)
         if (fwrite(buffer, 1, bytes_received, file) != bytes_received)
         {
             perror("Error writing to file");
-            break;
+            close(client_socket);
+            fclose(file);
+            pthread_exit(NULL);
         }
     }
     if (bytes_received < 0)
     {
         perror("Error receiving file data");
+        close(client_socket);
+        fclose(file);
+        pthread_exit(NULL);
     }
-
-    // Flush any remaining data in the output buffer
-    fflush(file);
 
     printf("File received: %s\n", received_filename);
 
