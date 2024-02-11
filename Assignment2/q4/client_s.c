@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/time.h>
 
 #define PORT 8085
 #define MAX_FILENAME_LEN 256
@@ -52,7 +53,7 @@ int send_file(const char *filename)
         return -1;
     }
 
-    sleep(2);
+    sleep(1);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -82,11 +83,6 @@ int send_file(const char *filename)
         {
             break;
         }
-        // for (int i = 0; i < bytes_read; i++)
-        // {
-        //     printf("%c", buffer[i]);
-        // }
-        // printf("\n");
         if (send(sock_fd, buffer, bytes_read, 0) == -1)
         {
             perror("Send failed");
@@ -100,14 +96,6 @@ int send_file(const char *filename)
     fclose(fptr);
     close(sock_fd);
 
-    // Send an empty message to the server to indicate the end of file
-    // if (send(sock_fd, "", 0, 0) == -1)
-    // {
-    //     perror("Send failed");
-    //     close(sock_fd);
-    //     return -1;
-    // }
-    // else
     printf("File sent successfully: %s\n", filename);
 
     return 0;
@@ -117,6 +105,11 @@ int main()
 {
     DIR *dir;
     struct dirent *entry;
+
+    struct timeval start_time, end_time;
+    double total_time;
+
+    gettimeofday(&start_time, NULL); // Start the timer
 
     // Open directory
     if ((dir = opendir(FOLDER_PATH)) == NULL)
@@ -139,6 +132,11 @@ int main()
     }
 
     closedir(dir);
+
+    gettimeofday(&end_time, NULL); // End the timer
+
+    total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
+    printf("Total time taken: %.6f seconds\n", total_time);
 
     return 0;
 }

@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #define PORT 8085
-#define MAX_CONN 10
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
@@ -33,7 +33,6 @@ void *send_file(void *filename)
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    // server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     if (inet_pton(AF_INET, IP, &(server_addr.sin_addr)) <= 0)
     {
         perror("Invalid address");
@@ -55,7 +54,7 @@ void *send_file(void *filename)
         pthread_exit(NULL);
     }
 
-    sleep(2);
+    sleep(1);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -70,16 +69,20 @@ void *send_file(void *filename)
     }
 
     // Send file data
-    while (!feof(fptr))
+    while (1)
     {
         char buffer[MAX_BUFFER_SIZE];
         size_t bytes_read = fread(buffer, 1, sizeof(buffer), fptr);
-        if (bytes_read == -1)
+        if (bytes_read < 0)
         {
             perror("File read failed");
             fclose(fptr);
             close(sock_fd);
             pthread_exit(NULL);
+        }
+        if (bytes_read == 0)
+        {
+            break;
         }
         if (send(sock_fd, buffer, bytes_read, 0) == -1)
         {
@@ -104,6 +107,10 @@ int main()
     DIR *dir;
     struct dirent *entry;
 
+    // Start time measurement
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
     // Open directory
     if ((dir = opendir(FOLDER_PATH)) == NULL)
     {
@@ -119,7 +126,6 @@ int main()
         if (entry->d_type == DT_REG)
             num_files++;
     }
-    // closedir(dir);
 
     printf("Number of files to send: %d\n", num_files);
 
@@ -132,7 +138,6 @@ int main()
     // Create threads to send files
     while ((entry = readdir(dir)) != NULL)
     {
-        // char filename[MAX_FILENAME_LEN];
         if (entry->d_type == DT_REG)
         {
             char *filename = entry->d_name;
@@ -148,6 +153,13 @@ int main()
     {
         pthread_join(threads[j], NULL);
     }
+
+    // End time measurement
+    gettimeofday(&end, NULL);
+    double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
+    time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
+
+    printf("Time taken to send all files: %.6f seconds\n", time_taken);
 
     return 0;
 }
