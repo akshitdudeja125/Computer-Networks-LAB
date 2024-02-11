@@ -65,7 +65,6 @@ int main(int argc, char *argv[])
 
     // Send fileName to server
     send(client_socket, fileName, strlen(fileName), 0);
-    printf("%s %d\n", fileName, strlen(fileName));
     // sleep for 2 seconds
     sleep(2);
     // Send file data to server
@@ -73,8 +72,6 @@ int main(int argc, char *argv[])
     ssize_t bytes_read;
     while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, file)) > 0)
     {
-        printf("%s\n", buffer);
-        printf("%d\n", bytes_read);
         send(client_socket, buffer, bytes_read, 0);
     }
     if (bytes_read < 0)

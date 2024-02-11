@@ -19,24 +19,28 @@ void *handle_client(void *arg)
     int client_socket = *((int *)arg);
     free(arg); // Free memory allocated for the argument
 
-    char filename[BUFFER_SIZE];
-    char buffer[BUFFER_SIZE];
     FILE *file;
     ssize_t bytes_received;
 
     DIR *dir;
-    struct dirent *entry;
 
     if ((dir = opendir(RECEIVED_FILES_FOLDER)) == NULL)
     {
-        mkdir(RECEIVED_FILES_FOLDER, 0777);
+        // mkdir(RECEIVED_FILES_FOLDER, 0777);
+        if (mkdir(RECEIVED_FILES_FOLDER, 0777) == -1)
+        {
+            perror("Failed to open directory");
+            close(client_socket);
+            pthread_exit(NULL);
+        }
     }
     else
     {
         closedir(dir);
     }
 
-    // Receive filename
+    char filename[BUFFER_SIZE];
+
     bytes_received = recv(client_socket, filename, BUFFER_SIZE, 0);
     if (bytes_received < 0)
     {
@@ -44,14 +48,11 @@ void *handle_client(void *arg)
         close(client_socket);
         return NULL;
     }
-    printf("bytes_received: %ld\n", bytes_received);
-    filename[bytes_received] = '\0';
-    printf("Received filename: %s\n", filename);
 
-    // Append folder path to filename
+    filename[bytes_received] = '\0';
+
     char received_filename[BUFFER_SIZE];
     snprintf(received_filename, BUFFER_SIZE, "%s/%s", RECEIVED_FILES_FOLDER, filename);
-    // received_filename[strlen(RECEIVED_FILES_FOLDER) + bytes_received + 1] = '\0';
     // Open file for writing
     file = fopen(received_filename, "wb");
     if (file == NULL)
@@ -62,21 +63,27 @@ void *handle_client(void *arg)
     }
 
     // Receive file data and write to file
+    char buffer[BUFFER_SIZE];
     while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0)
     {
         if (fwrite(buffer, 1, bytes_received, file) != bytes_received)
         {
             perror("Error writing to file");
-            break;
+            close(client_socket);
+            fclose(file);
+            pthread_exit(NULL);
         }
     }
     if (bytes_received < 0)
     {
         perror("Error receiving file data");
+        close(client_socket);
+        fclose(file);
+        pthread_exit(NULL);
     }
 
     printf("File received: %s\n", received_filename);
-    fflush(file);
+
     fclose(file);
     close(client_socket);
     return NULL;
