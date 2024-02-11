@@ -14,73 +14,6 @@
 #define IP "10.10.88.233"
 #define RECEIVED_FILES_FOLDER "received_files"
 
-// void *handle_client(void *arg)
-// {
-//     int client_socket = *((int *)arg);
-//     free(arg); // Free memory allocated for the argument
-
-//     char filename[BUFFER_SIZE];
-//     char buffer[BUFFER_SIZE];
-//     FILE *file;
-//     ssize_t bytes_received;
-
-//     DIR *dir;
-//     struct dirent *entry;
-
-//     if ((dir = opendir(RECEIVED_FILES_FOLDER)) == NULL)
-//     {
-//         mkdir(RECEIVED_FILES_FOLDER, 0777);
-//     }
-//     else
-//     {
-//         closedir(dir);
-//     }
-
-//     // Receive filename
-//     bytes_received = recv(client_socket, filename, BUFFER_SIZE, 0);
-//     if (bytes_received < 0)
-//     {
-//         perror("Error receiving filename");
-//         close(client_socket);
-//         return NULL;
-//     }
-//     printf("bytes_received: %ld\n", bytes_received);
-//     filename[bytes_received] = '\0';
-//     printf("Received filename: %s\n", filename);
-
-//     // Append folder path to filename
-//     char received_filename[BUFFER_SIZE];
-//     snprintf(received_filename, BUFFER_SIZE, "%s/%s", RECEIVED_FILES_FOLDER, filename);
-//     // received_filename[strlen(RECEIVED_FILES_FOLDER) + bytes_received + 1] = '\0';
-//     // Open file for writing
-//     file = fopen(received_filename, "wb");
-//     if (file == NULL)
-//     {
-//         perror("Error opening file");
-//         close(client_socket);
-//         return NULL;
-//     }
-
-//     // Receive file data and write to file
-//     while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0)
-//     {
-//         if (fwrite(buffer, 1, bytes_received, file) != bytes_received)
-//         {
-//             perror("Error writing to file");
-//             break;
-//         }
-//     }
-//     if (bytes_received < 0)
-//     {
-//         perror("Error receiving file data");
-//     }
-
-//     printf("File received: %s\n", received_filename);
-//     fflush(file);
-//     fclose(file);
-//     close(client_socket);
-//     return NULL;
-// }
 void *handle_client(void *arg)
 {
     int client_socket = *((int *)arg);
@@ -106,7 +39,6 @@ void *handle_client(void *arg)
         closedir(dir);
     }
 
-    // Receive filename
     char filename[BUFFER_SIZE];
 
     bytes_received = recv(client_socket, filename, BUFFER_SIZE, 0);
@@ -116,21 +48,10 @@ void *handle_client(void *arg)
         close(client_socket);
         return NULL;
     }
-    printf("bytes_received: %ld\n", bytes_received);
-    filename[bytes_received] = '\0';
-    printf("Received filename: %s\n", filename);
 
-    // Append folder path to filename
+    filename[bytes_received] = '\0';
 
     char received_filename[BUFFER_SIZE];
-    // char *received_filename = malloc(strlen(RECEIVED_FILES_FOLDER) + 1 + strlen(filename) + 1); // +1 for '/' and +1 for null terminator
-    // if (received_filename == NULL)
-
-    // {
-    //     perror("Error allocating memory");
-    //     close(client_socket);
-    //     return NULL;
-    // }
     snprintf(received_filename, BUFFER_SIZE, "%s/%s", RECEIVED_FILES_FOLDER, filename);
     // Open file for writing
     file = fopen(received_filename, "wb");
