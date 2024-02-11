@@ -66,7 +66,8 @@ int main(int argc, char *argv[])
     // Send fileName to server
     send(client_socket, fileName, strlen(fileName), 0);
     printf("%s %d\n", fileName, strlen(fileName));
-
+    // sleep for 2 seconds
+    sleep(2);
     // Send file data to server
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
