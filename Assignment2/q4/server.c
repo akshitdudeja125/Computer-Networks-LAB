@@ -65,13 +65,29 @@ void *handle_connection(void *sock_fd)
     }
 
     // Receive file data and write to file
-    char buffer[MAX_BUFFER_SIZE];
     ssize_t bytes_read;
-    while ((bytes_read = recv(client_socket, buffer, sizeof(buffer), 0)) > 0)
+    while (1)
     {
+        char buffer[MAX_BUFFER_SIZE];
+        bytes_read = recv(client_socket, buffer, sizeof(buffer), 0);
         buffer[bytes_read] = '\0';
-        printf("Received bytes: %ld\n", bytes_read);
-        printf("Received: %s\n", buffer);
+
+        if (bytes_read == 0)
+        {
+            break;
+        }
+
+        if (bytes_read < 0)
+        {
+            perror("Receive failed");
+            close(client_socket);
+            fclose(file);
+            pthread_exit(NULL);
+        }
+
+        // printf("Received bytes: %ld\n", bytes_read);
+        // printf("Received: %s\n", buffer);
+
         if (fwrite(buffer, 1, bytes_read, file) != bytes_read)
         {
             perror("File write failed");
@@ -79,13 +95,6 @@ void *handle_connection(void *sock_fd)
             fclose(file);
             pthread_exit(NULL);
         }
-    }
-    if (bytes_read < 0)
-    {
-        perror("Receive failed");
-        close(client_socket);
-        fclose(file);
-        pthread_exit(NULL);
     }
 
     // Close file and connection
@@ -109,6 +118,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    memset(&server_addr, 0, sizeof(server_addr));
     // Set server address parameters
     server_addr.sin_family = AF_INET;
     // server_addr.sin_addr.s_addr = INADDR_ANY;

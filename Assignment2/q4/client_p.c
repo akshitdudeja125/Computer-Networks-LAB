@@ -23,7 +23,6 @@ void *send_file(void *filename)
     int sock_fd;
     struct sockaddr_in server_addr;
     ssize_t bytes_sent;
-    char buffer[MAX_BUFFER_SIZE];
 
     // Connect to server
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -56,6 +55,8 @@ void *send_file(void *filename)
         pthread_exit(NULL);
     }
 
+    sleep(2);
+
     // Open file
     char filePath[MAX_BUFFER_SIZE];
     snprintf(filePath, MAX_BUFFER_SIZE, "%s/%s", FOLDER_PATH, file);
@@ -71,6 +72,7 @@ void *send_file(void *filename)
     // Send file data
     while (!feof(fptr))
     {
+        char buffer[MAX_BUFFER_SIZE];
         size_t bytes_read = fread(buffer, 1, sizeof(buffer), fptr);
         if (bytes_read == -1)
         {

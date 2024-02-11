@@ -12,7 +12,7 @@
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
-#define FOLDER_PATH "client_files_1"
+#define FOLDER_PATH "client_files"
 
 int send_file(const char *filename)
 {
@@ -20,7 +20,6 @@ int send_file(const char *filename)
     int sock_fd;
     struct sockaddr_in server_addr;
     ssize_t bytes_sent;
-    char buffer[MAX_BUFFER_SIZE];
 
     // Connect to server
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -29,6 +28,7 @@ int send_file(const char *filename)
         return -1;
     }
 
+    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     if (inet_pton(AF_INET, IP, &(server_addr.sin_addr)) <= 0)
@@ -52,6 +52,8 @@ int send_file(const char *filename)
         return -1;
     }
 
+    sleep(2);
+
     // Open file
     char filePath[MAX_BUFFER_SIZE];
     snprintf(filePath, MAX_BUFFER_SIZE, "%s/%s", FOLDER_PATH, filename);
@@ -65,16 +67,26 @@ int send_file(const char *filename)
     }
 
     // Send file data
-    while (!feof(fptr))
+    while (1)
     {
+        char buffer[MAX_BUFFER_SIZE];
         size_t bytes_read = fread(buffer, 1, sizeof(buffer), fptr);
-        if (bytes_read == -1)
+        if (bytes_read < 0)
         {
             perror("File read failed");
             fclose(fptr);
             close(sock_fd);
             return -1;
         }
+        if (bytes_read == 0)
+        {
+            break;
+        }
+        // for (int i = 0; i < bytes_read; i++)
+        // {
+        //     printf("%c", buffer[i]);
+        // }
+        // printf("\n");
         if (send(sock_fd, buffer, bytes_read, 0) == -1)
         {
             perror("Send failed");
@@ -88,6 +100,14 @@ int send_file(const char *filename)
     fclose(fptr);
     close(sock_fd);
 
+    // Send an empty message to the server to indicate the end of file
+    // if (send(sock_fd, "", 0, 0) == -1)
+    // {
+    //     perror("Send failed");
+    //     close(sock_fd);
+    //     return -1;
+    // }
+    // else
     printf("File sent successfully: %s\n", filename);
 
     return 0;
