@@ -64,7 +64,11 @@ int main(int argc, char *argv[])
     }
 
     // Send fileName to server
-    send(client_socket, fileName, strlen(fileName), 0);
+    if (send(client_socket, fileName, strlen(fileName), 0) < 0)
+    {
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    }
     // sleep for 2 seconds
     sleep(2);
     // Send file data to server

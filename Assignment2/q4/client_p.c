@@ -47,7 +47,7 @@ void *send_file(void *filename)
     }
 
     // Send filename
-    if ((bytes_sent = send(sock_fd, file, strlen(file), 0)) == -1)
+    if (send(sock_fd, file, strlen(file), 0) == -1)
     {
         perror("Send failed");
         close(sock_fd);

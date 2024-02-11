@@ -38,7 +38,11 @@ void send_expression(const char *expression)
     }
 
     // Send expression to server
-    send(client_socket, expression, strlen(expression), 0);
+    if(send(client_socket, expression, strlen(expression), 0) < 0)
+    {
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    }
 
     // Receive result from server
     ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);

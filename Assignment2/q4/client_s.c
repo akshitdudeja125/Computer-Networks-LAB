@@ -46,7 +46,7 @@ int send_file(const char *filename)
     }
 
     // Send filename
-    if ((bytes_sent = send(sock_fd, filename, strlen(filename), 0)) == -1)
+    if (send(sock_fd, filename, strlen(filename), 0) == -1)
     {
         perror("Send failed");
         close(sock_fd);
