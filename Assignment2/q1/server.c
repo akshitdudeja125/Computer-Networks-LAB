@@ -36,8 +36,8 @@ void handle_client(int client_socket)
     int errorCode = 0;                  // Initialize errorCode to 0
     char errorMessage[MAX_BUFFER_SIZE]; // Initialize errorMessage buffer
     double result = evaluatePostfix(buffer, &errorCode, errorMessage);
-    printf("Result %lf\n", result);
-    printf("Error Code %d\n", errorCode);
+    // printf("Result %lf\n", result);
+    // printf("Error Code %d\n", errorCode);
     if (errorCode == 0)
     {
         // Send result to client
@@ -53,6 +53,7 @@ void handle_client(int client_socket)
             perror("Error sending result to client");
             exit(EXIT_FAILURE);
         }
+        printf("Result sent to client\n");
     }
     else
     {
