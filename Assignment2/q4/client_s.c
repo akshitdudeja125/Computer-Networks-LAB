@@ -7,19 +7,16 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <pthread.h>
 
-#define PORT 8080
-#define MAX_CONN 10
+#define PORT 8085
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
-#define FOLDER_PATH "client_files"
+#define FOLDER_PATH "client_files_1"
 
-void *send_file(void *filename)
+int send_file(const char *filename)
 {
-    printf("Sending file: %s\n", (char *)filename);
-    char *file = (char *)filename;
+    printf("Sending file: %s\n", filename);
     int sock_fd;
     struct sockaddr_in server_addr;
     ssize_t bytes_sent;
@@ -29,31 +26,30 @@ void *send_file(void *filename)
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("Socket creation failed");
-        pthread_exit(NULL);
+        return -1;
     }
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    // server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     if (inet_pton(AF_INET, IP, &(server_addr.sin_addr)) <= 0)
     {
         perror("Invalid address");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     if (connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
         perror("Connection failed");
         close(sock_fd);
-        pthread_exit(NULL);
+        return -1;
     }
 
     // Send filename
-    if ((bytes_sent = send(sock_fd, file, strlen(file), 0)) == -1)
+    if ((bytes_sent = send(sock_fd, filename, strlen(filename), 0)) == -1)
     {
         perror("Send failed");
         close(sock_fd);
-        pthread_exit(NULL);
+        return -1;
     }
 
     // Open file
@@ -65,7 +61,7 @@ void *send_file(void *filename)
     {
         perror("File open failed");
         close(sock_fd);
-        pthread_exit(NULL);
+        return -1;
     }
 
     // Send file data
@@ -77,14 +73,14 @@ void *send_file(void *filename)
             perror("File read failed");
             fclose(fptr);
             close(sock_fd);
-            pthread_exit(NULL);
+            return -1;
         }
         if (send(sock_fd, buffer, bytes_read, 0) == -1)
         {
             perror("Send failed");
             fclose(fptr);
             close(sock_fd);
-            pthread_exit(NULL);
+            return -1;
         }
     }
 
@@ -92,9 +88,9 @@ void *send_file(void *filename)
     fclose(fptr);
     close(sock_fd);
 
-    printf("File sent successfully: %s\n", file);
+    printf("File sent successfully: %s\n", filename);
 
-    pthread_exit(NULL);
+    return 0;
 }
 
 int main()
@@ -109,42 +105,20 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    int num_files = 0;
-
-    // Count number of files
+    // Send files sequentially
     while ((entry = readdir(dir)) != NULL)
     {
-        if (entry->d_type == DT_REG)
-            num_files++;
-    }
-    // closedir(dir);
-
-    printf("Number of files to send: %d\n", num_files);
-
-    // Send files in parallel
-    pthread_t threads[num_files];
-    int i = 0;
-
-    rewinddir(dir);
-
-    // Create threads to send files
-    while ((entry = readdir(dir)) != NULL)
-    {
-        // char filename[MAX_FILENAME_LEN];
         if (entry->d_type == DT_REG)
         {
             char *filename = entry->d_name;
-            pthread_create(&threads[i], NULL, send_file, (void *)filename);
-            i++;
+            if (send_file(filename) == -1)
+            {
+                printf("Failed to send file: %s\n", filename);
+            }
         }
     }
-    closedir(dir);
 
-    // Join threads
-    for (int j = 0; j < num_files; j++)
-    {
-        pthread_join(threads[j], NULL);
-    }
+    closedir(dir);
 
     return 0;
 }
