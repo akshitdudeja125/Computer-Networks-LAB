@@ -119,7 +119,6 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    memset(&server_addr, 0, sizeof(server_addr));
     // Set server address parameters
     server_addr.sin_family = AF_INET;
     // server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -181,6 +180,8 @@ int main()
     return 0;
 }
 
+// ************** Using fork() **************
+
 // #include <stdio.h>
 // #include <stdlib.h>
 // #include <string.h>
@@ -190,12 +191,13 @@ int main()
 // #include <sys/socket.h>
 // #include <sys/types.h>
 // #include <dirent.h>
+// #include <sys/stat.h>
 
 // #define PORT 8085
 // #define MAX_CONN 10
 // #define MAX_FILENAME_LEN 256
 // #define MAX_BUFFER_SIZE 1024
-// #define IP "127.0.0.1"
+// #define IP "10.10.88.233"
 // #define RECEIVED_FILES_FOLDER "received_files"
 
 // void handle_connection(int client_socket)
@@ -233,6 +235,7 @@ int main()
 
 //     char filePath[MAX_BUFFER_SIZE];
 //     snprintf(filePath, MAX_BUFFER_SIZE, "%s/%s", RECEIVED_FILES_FOLDER, filename);
+
 //     printf("File path: %s\n", filePath);
 
 //     // Open file
@@ -245,11 +248,29 @@ int main()
 //     }
 
 //     // Receive file data and write to file
-//     char buffer[MAX_BUFFER_SIZE];
 //     ssize_t bytes_read;
-//     while ((bytes_read = recv(client_socket, buffer, MAX_BUFFER_SIZE, 0)) > 0)
+//     while (1)
 //     {
+//         char buffer[MAX_BUFFER_SIZE];
+//         bytes_read = recv(client_socket, buffer, sizeof(buffer), 0);
 //         buffer[bytes_read] = '\0';
+
+//         if (bytes_read == 0)
+//         {
+//             break;
+//         }
+
+//         if (bytes_read < 0)
+//         {
+//             perror("Receive failed");
+//             close(client_socket);
+//             fclose(file);
+//             exit(EXIT_FAILURE);
+//         }
+
+//         // printf("Received bytes: %ld\n", bytes_read);
+//         // printf("Received: %s\n", buffer);
+
 //         if (fwrite(buffer, 1, bytes_read, file) != bytes_read)
 //         {
 //             perror("File write failed");
@@ -257,13 +278,6 @@ int main()
 //             fclose(file);
 //             exit(EXIT_FAILURE);
 //         }
-//     }
-//     if (bytes_read < 0)
-//     {
-//         perror("Receive failed");
-//         close(client_socket);
-//         fclose(file);
-//         exit(EXIT_FAILURE);
 //     }
 
 //     // Close file and connection
@@ -323,23 +337,24 @@ int main()
 //         }
 //         printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-//         pid_t child_pid = fork();
-//         if (child_pid == -1)
+//         pid_t pid = fork();
+//         if (pid < 0)
 //         {
-//             perror("Fork failed");
+//             perror("Error forking");
 //             close(client_socket);
 //             continue;
 //         }
-//         else if (child_pid == 0)
+//         else if (pid == 0)
 //         {
 //             // Child process
-//             close(server_socket); // Close server socket in child
+//             close(server_socket);
 //             handle_connection(client_socket);
+//             exit(EXIT_SUCCESS);
 //         }
 //         else
 //         {
 //             // Parent process
-//             close(client_socket); // Close client socket in parent
+//             close(client_socket);
 //         }
 //     }
 

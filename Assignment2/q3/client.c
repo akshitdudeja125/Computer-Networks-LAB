@@ -8,6 +8,7 @@
 #define SERVER_IP "10.10.88.233"
 #define SERVER_PORT 8080
 #define BUFFER_SIZE 1024
+#define SLEEP_TIME 1
 
 int main(int argc, char *argv[])
 {
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
 
     // Set up server address
     struct sockaddr_in server_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
+
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERVER_PORT);
     if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0)
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     // sleep for 2 seconds
-    sleep(2);
+    sleep(SLEEP_TIME);
+
     // Send file data to server
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;

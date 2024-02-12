@@ -12,10 +12,10 @@
 #define PORT 8085
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
-#define IP "127.0.0.1"
+#define IP "10.10.150.197"
 #define FOLDER_PATH "client_files"
 
-int send_file(const char *filename)
+int send_file(const char *filename, long *file_size)
 {
     printf("Sending file: %s\n", filename);
     int sock_fd;
@@ -29,7 +29,6 @@ int send_file(const char *filename)
         return -1;
     }
 
-    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     if (inet_pton(AF_INET, IP, &(server_addr.sin_addr)) <= 0)
@@ -46,14 +45,12 @@ int send_file(const char *filename)
     }
 
     // Send filename
-    if (send(sock_fd, filename, strlen(filename), 0) == -1)
+    if (send(sock_fd, filename, MAX_FILENAME_LEN, 0) == -1)
     {
         perror("Send failed");
         close(sock_fd);
         return -1;
     }
-
-    sleep(1);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -83,13 +80,14 @@ int send_file(const char *filename)
         {
             break;
         }
-        if (send(sock_fd, buffer, bytes_read, 0) == -1)
+        if (send(sock_fd, buffer, sizeof(buffer), 0) == -1)
         {
             perror("Send failed");
             fclose(fptr);
             close(sock_fd);
             return -1;
         }
+        *file_size += bytes_read; // Add the size of current chunk to file size
     }
 
     // Close file and connection
@@ -97,7 +95,6 @@ int send_file(const char *filename)
     close(sock_fd);
 
     printf("File sent successfully: %s\n", filename);
-
     return 0;
 }
 
@@ -118,6 +115,7 @@ int main()
         exit(EXIT_FAILURE);
     }
     int count_files = 0;
+    long total_file_size = 0; // Variable to hold the total size of all files
     // Send files sequentially
     while ((entry = readdir(dir)) != NULL)
     {
@@ -125,9 +123,14 @@ int main()
         {
             char *filename = entry->d_name;
             count_files++;
-            if (send_file(filename) == -1)
+            long file_size = 0;
+            if (send_file(filename, &file_size) == -1)
             {
                 printf("Failed to send file: %s\n", filename);
+            }
+            else
+            {
+                total_file_size += file_size; // Update total file size
             }
         }
     }
@@ -137,7 +140,8 @@ int main()
     gettimeofday(&end_time, NULL); // End the timer
 
     total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
-    printf("Total time taken: %.6f seconds\n", total_time - count_files);
+    printf("Total time taken: %.6f seconds\n", total_time);
+    printf("Total size of all files: %ld bytes\n", total_file_size);
 
     return 0;
 }
