@@ -16,6 +16,7 @@
 #define IP "127.0.0.1"
 #define FOLDER_PATH "client_files"
 #define SLEEP_TIME 1
+long max_file_size = 0;
 
 void *send_file(void *filename)
 {
@@ -70,6 +71,7 @@ void *send_file(void *filename)
     }
 
     // Send file data
+    long file_size_temp = 0;
     while (1)
     {
         char buffer[MAX_BUFFER_SIZE];
@@ -92,7 +94,11 @@ void *send_file(void *filename)
             close(sock_fd);
             pthread_exit(NULL);
         }
+        file_size_temp += bytes_read;
     }
+
+    if (max_file_size < file_size_temp)
+        max_file_size = file_size_temp;
 
     // Close file and connection
     fclose(fptr);
@@ -120,7 +126,6 @@ int main()
     }
 
     int num_files = 0;
-
     // Count number of files
     while ((entry = readdir(dir)) != NULL)
     {
@@ -161,6 +166,7 @@ int main()
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
     printf("Time taken to send all files: %.6f seconds\n", time_taken - SLEEP_TIME);
+    printf("Max size of all files: %ld bytes\n", max_file_size);
 
     return 0;
 }
