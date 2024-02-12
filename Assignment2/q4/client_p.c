@@ -13,9 +13,8 @@
 #define PORT 8085
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
-#define IP "127.0.0.1"
+#define IP "10.10.150.197"
 #define FOLDER_PATH "client_files"
-#define SLEEP_TIME 1
 long max_file_size = 0;
 
 void *send_file(void *filename)
@@ -49,14 +48,12 @@ void *send_file(void *filename)
     }
 
     // Send filename
-    if (send(sock_fd, file, strlen(file), 0) == -1)
+    if (send(sock_fd, file, MAX_FILENAME_LEN, 0) == -1)
     {
         perror("Send failed");
         close(sock_fd);
         pthread_exit(NULL);
     }
-
-    sleep(SLEEP_TIME);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -87,7 +84,7 @@ void *send_file(void *filename)
         {
             break;
         }
-        if (send(sock_fd, buffer, bytes_read, 0) == -1)
+        if (send(sock_fd, buffer, sizeof(buffer), 0) == -1)
         {
             perror("Send failed");
             fclose(fptr);
@@ -165,7 +162,7 @@ int main()
     double time_taken = (end.tv_sec - start.tv_sec) * 1e6;
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
-    printf("Time taken to send all files: %.6f seconds\n", time_taken - SLEEP_TIME);
+    printf("Time taken to send all files: %.6f seconds\n", time_taken);
     printf("Max size of all files: %ld bytes\n", max_file_size);
 
     return 0;

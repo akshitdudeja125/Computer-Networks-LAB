@@ -12,9 +12,8 @@
 #define PORT 8085
 #define MAX_FILENAME_LEN 256
 #define MAX_BUFFER_SIZE 1024
-#define IP "127.0.0.1"
+#define IP "10.10.150.197"
 #define FOLDER_PATH "client_files"
-#define SLEEP_TIME 1
 
 int send_file(const char *filename, long *file_size)
 {
@@ -46,14 +45,12 @@ int send_file(const char *filename, long *file_size)
     }
 
     // Send filename
-    if (send(sock_fd, filename, strlen(filename), 0) == -1)
+    if (send(sock_fd, filename, MAX_FILENAME_LEN, 0) == -1)
     {
         perror("Send failed");
         close(sock_fd);
         return -1;
     }
-
-    sleep(SLEEP_TIME);
 
     // Open file
     char filePath[MAX_BUFFER_SIZE];
@@ -83,7 +80,7 @@ int send_file(const char *filename, long *file_size)
         {
             break;
         }
-        if (send(sock_fd, buffer, bytes_read, 0) == -1)
+        if (send(sock_fd, buffer, sizeof(buffer), 0) == -1)
         {
             perror("Send failed");
             fclose(fptr);
@@ -126,7 +123,7 @@ int main()
         {
             char *filename = entry->d_name;
             count_files++;
-            long file_size;
+            long file_size = 0;
             if (send_file(filename, &file_size) == -1)
             {
                 printf("Failed to send file: %s\n", filename);
@@ -143,7 +140,7 @@ int main()
     gettimeofday(&end_time, NULL); // End the timer
 
     total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
-    printf("Total time taken: %.6f seconds\n", total_time - (count_files * SLEEP_TIME));
+    printf("Total time taken: %.6f seconds\n", total_time);
     printf("Total size of all files: %ld bytes\n", total_file_size);
 
     return 0;
