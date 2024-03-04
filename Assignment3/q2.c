@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <stdbool.h>
 #define PORT 80
 #define BUFFER_SIZE 1024
 #define FILENAME "responsea.html"
+#define HEADER_FILENAME "headers.txt"
 
 void send_http_request(int client_socket, const char *host, const char *path)
 {
@@ -25,12 +27,19 @@ void receive_http_response(int client_socket)
 {
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
-    int headers_done = 0;
+    bool headers_done = false;
 
     FILE *file = fopen(FILENAME, "wb");
     if (file == NULL)
     {
         perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *header_file = fopen(HEADER_FILENAME, "w");
+    if (header_file == NULL)
+    {
+        perror("Error opening header file");
         exit(EXIT_FAILURE);
     }
 
@@ -43,9 +52,11 @@ void receive_http_response(int client_socket)
             char *end_of_headers = strstr(buffer, "\r\n\r\n");
             if (end_of_headers != NULL)
             {
-                // Skip the headers and set the flag
+                // Write the headers to the header file
+                fwrite(buffer, 1, end_of_headers - buffer + 4, header_file);
+                headers_done = true;
+
                 fwrite(end_of_headers + 4, 1, bytes_received - (end_of_headers - buffer) - 4, file);
-                headers_done = 1;
             }
         }
         else
@@ -76,8 +87,8 @@ int main()
     }
 
     // Print server address
-    printf("Server address: %s\n", inet_ntoa(*(struct in_addr *)he->h_addr));
-    char *server_address = inet_ntoa(*(struct in_addr *)he->h_addr);
+    printf("Server address: %s\n", inet_ntoa(*(struct in_addr *)he->h_addr_list[0]));
+    char *server_address = inet_ntoa(*(struct in_addr *)he->h_addr_list[0]);
     // Create socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1)
