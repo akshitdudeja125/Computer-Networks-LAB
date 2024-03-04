@@ -3,10 +3,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <netdb.h>
+
 #define PORT 80
 #define BUFFER_SIZE 1024
-#define FILENAME "responsea.html"
+#define FILENAME "response3.html" // Name of the file to save the response
 
 void send_http_request(int client_socket, const char *host, const char *path)
 {
@@ -25,9 +25,9 @@ void receive_http_response(int client_socket)
 {
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
-    int headers_done = 0;
+    int headers_done = 0; // Flag to indicate when headers are done
 
-    FILE *file = fopen(FILENAME, "wb");
+    FILE *file = fopen(FILENAME, "wb"); // Open file for writing in binary mode
     if (file == NULL)
     {
         perror("Error opening file");
@@ -54,30 +54,16 @@ void receive_http_response(int client_socket)
         }
     }
 
-    fclose(file);
+    fclose(file); // Close the file
 }
 
 int main()
 {
     int client_socket;
     struct sockaddr_in server_addr;
-    const char *host = "www.google.com";
+    const char *host = "www.example.com";
     const char *path = "/index.html";
 
-    struct hostent *he;
-    if ((he = gethostbyname(host)) == NULL)
-    {
-        herror("gethostbyname");
-        return -1;
-    }
-    else
-    {
-        printf("Host found.\n");
-    }
-
-    // Print server address
-    printf("Server address: %s\n", inet_ntoa(*(struct in_addr *)he->h_addr));
-    char *server_address = inet_ntoa(*(struct in_addr *)he->h_addr);
     // Create socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1)
@@ -88,9 +74,10 @@ int main()
 
     // Set up server address structure
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(server_address);
+    server_addr.sin_addr.s_addr = inet_addr("93.184.216.34"); // IPv4 address of www.example.com
     server_addr.sin_port = htons(PORT);
 
+    // Connect to server
     if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
         perror("Error connecting to server");
@@ -98,10 +85,13 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    // Send HTTP GET request
     send_http_request(client_socket, host, path);
 
+    // Receive and save HTTP response to file
     receive_http_response(client_socket);
 
+    // Close the socket
     close(client_socket);
 
     return 0;

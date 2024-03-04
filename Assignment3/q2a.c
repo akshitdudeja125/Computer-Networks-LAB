@@ -5,29 +5,27 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1000007
 
 int connect_to_server(const char *host, int port)
 {
     printf("Connecting to server...\n");
-    struct hostent *he;
+    // struct hostent *he;
     struct sockaddr_in server_addr;
 
-    if ((he = gethostbyname(host)) == NULL)
-    {
-        herror("gethostbyname");
-        return -1;
-    }
-    else
-    {
-        printf("Host found.\n");
-    }
+    // if ((he = gethostbyname(host)) == NULL)
+    // {
+    //     herror("gethostbyname");
+    //     return -1;
+    // }
+    // else
+    // {
+    //     printf("Host found.\n");
+    // }
 
     server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("93.184.216.34"); // IPv4 address of www.example.com
     server_addr.sin_port = htons(port);
-    memcpy(&server_addr.sin_addr, he->h_addr_list[0], he->h_length);
-    memset(&(server_addr.sin_zero), '\0', 8);
-
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1)
     {
@@ -61,7 +59,7 @@ void send_request_and_save(int socket_fd, const char *request)
         exit(1);
     }
 
-    FILE *file = fopen("index2.html", "a"); // Open in append mode
+    FILE *file = fopen("indexe.html", "a"); // Open in append mode
     if (file == NULL)
     {
         perror("Error opening file");
@@ -70,13 +68,31 @@ void send_request_and_save(int socket_fd, const char *request)
 
     char buffer[BUFFER_SIZE];
     int bytes_received;
+    int header_ended = 0; // Flag to track whether the header has ended
 
-    // Read response and write to file
+    // Read response and write to file, skipping the headers
     while ((bytes_received = recv(socket_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
     {
-        printf("received %d bytes\n", bytes_received);
         buffer[bytes_received] = '\0';
-        fprintf(file, "%s", buffer);
+        printf("Bytes received: %d\n", bytes_received);
+        // Check if the header has ended
+        if (!header_ended)
+        {
+            char *header_end = strstr(buffer, "\r\n\r\n");
+            if (header_end != NULL)
+            {
+                // Header found, set flag to indicate header has ended
+                header_ended = 1;
+                printf("Header ended\n");
+                // Skip past the header and write the remaining content to file
+                fwrite(header_end + 4, sizeof(char), bytes_received - (header_end - buffer) - 4, file);
+            }
+        }
+        else
+        {
+            // If the header has ended, directly write the content to the file
+            fwrite(buffer, sizeof(char), bytes_received, file);
+        }
     }
 
     if (bytes_received < 0)
@@ -94,9 +110,9 @@ void send_request_and_save(int socket_fd, const char *request)
 // Main function to fetch index.html using GET
 int main()
 {
-    const char *host = "www.google.com"; // Replace with the desired web server
-    int port = 80;                       // HTTP port
-    const char *path = "/";              // Path to the resource
+    const char *host = "www.example.com"; // Replace with the desired web server
+    int port = 80;                        // HTTP port
+    const char *path = "/index.html";     // Path to the resource
 
     char get_request[1000];
     sprintf(get_request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host);

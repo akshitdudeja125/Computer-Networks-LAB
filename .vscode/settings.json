@@ -45,6 +45,7 @@
         "stat.h": "c",
         "inet.h": "c",
         "dirent.h": "c",
-        "__locale": "c"
+        "__locale": "c",
+        "netdb.h": "c"
     }
 }

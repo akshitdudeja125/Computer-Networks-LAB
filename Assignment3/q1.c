@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define PORT 3003
+#define PORT 3005
 #define BUFFER_SIZE 1e9
 #define IP "127.0.0.1"
 
@@ -100,7 +100,7 @@ void generateResponse(const char *file_name, const char *file_ext, char *respons
     close(file_fd);
 }
 
-void *handle_client(void *arg)
+void *handleClient(void *arg)
 {
     int client_socket = *((int *)arg);
     char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 
         // create a new thread to handle client request
         pthread_t thread_id;
-        pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
+        pthread_create(&thread_id, NULL, handleClient, (void *)client_socket);
         pthread_detach(thread_id);
     }
 
