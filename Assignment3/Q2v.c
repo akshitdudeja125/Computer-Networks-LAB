@@ -2,118 +2,137 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <netdb.h>
 #include <arpa/inet.h>
 
+#define PORT 80
 #define BUFFER_SIZE 1024
+#define FILENAME "response.html" // Name of the file to save the response
 
-int connect_to_server(const char *host, int port)
+void send_http_request(int client_socket, const char *host, const char *path, const char *method)
 {
-    printf("Connecting to server...\n");
-    struct hostent *he;
-    struct sockaddr_in server_addr;
+    char request[BUFFER_SIZE];
+    snprintf(request, BUFFER_SIZE, "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", method, path, host);
 
-    if ((he = gethostbyname(host)) == NULL)
+    ssize_t bytes_sent = send(client_socket, request, strlen(request), 0);
+    if (bytes_sent < 0)
     {
-        herror("gethostbyname");
-        return -1;
+        perror("Error sending request");
+        exit(EXIT_FAILURE);
     }
-    else
-    {
-        printf("Host found.\n");
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    memcpy(&server_addr.sin_addr, he->h_addr_list[0], he->h_length);
-    memset(&(server_addr.sin_zero), '\0', 8);
-
-    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (socket_fd == -1)
-    {
-        perror("Socket creation failed");
-        return -1;
-    }
-    else
-    {
-        printf("Socket created successfully.\n");
-    }
-
-    if (connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
-    {
-        perror("Connection failed");
-        return -1;
-    }
-    else
-    {
-        printf("Connected successfully.\n");
-    }
-
-    return socket_fd;
 }
 
-// Function to send HTTP request and receive response
-void send_request_and_save(int socket_fd, const char *request)
+void receive_http_response(int client_socket)
 {
-    if (send(socket_fd, request, strlen(request), 0) == -1)
-    {
-        perror("Send failed");
-        exit(1);
-    }
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_received;
+    int headers_done = 0; // Flag to indicate when headers are done
 
-    FILE *file = fopen("index2.html", "a"); // Open in append mode
+    FILE *file = fopen(FILENAME, "wb"); // Open file for writing in binary mode
     if (file == NULL)
     {
         perror("Error opening file");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    char buffer[BUFFER_SIZE];
-    int bytes_received;
-
-    // Read response and write to file
-    while ((bytes_received = recv(socket_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
+    // Receive and write the response to the file
+    while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0)
     {
-        printf("received %d bytes\n", bytes_received);
-        buffer[bytes_received] = '\0';
-        fprintf(file, "%s", buffer);
+        if (!headers_done)
+        {
+            // Search for the double line break indicating end of headers
+            char *end_of_headers = strstr(buffer, "\r\n\r\n");
+            if (end_of_headers != NULL)
+            {
+                // Skip the headers and set the flag
+                fwrite(end_of_headers + 4, 1, bytes_received - (end_of_headers - buffer) - 4, file);
+                headers_done = 1;
+            }
+        }
+        else
+        {
+            fwrite(buffer, 1, bytes_received, file); // Write content to file
+        }
     }
 
-    if (bytes_received < 0)
-    {
-        perror("Receive failed");
-    }
-    else
-    {
-        printf("Response received successfully.\n");
-    }
-
-    fclose(file);
+    fclose(file); // Close the file
 }
 
-// Main function to fetch index.html using GET
-int main()
+void perform_get_request(int client_socket, const char *host, const char *path)
 {
-    const char *host = "www.google.com"; // Replace with the desired web server
-    int port = 80;                       // HTTP port
-    const char *path = "/";              // Path to the resource
+    send_http_request(client_socket, host, path, "GET");
+    receive_http_response(client_socket);
+}
 
-    char get_request[1000];
-    sprintf(get_request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host);
+int get_response_code(const char *response)
+{
+    const char *code_start = strstr(response, "HTTP/1.1");
+    if (code_start == NULL)
+        return -1;
 
-    int socket_fd = connect_to_server(host, port);
-    if (socket_fd == -1)
+    // Move pointer to the beginning of the status code
+    code_start += strlen("HTTP/1.1") + 1;
+
+    // Extract the status code
+    int code;
+    sscanf(code_start, "%d", &code);
+    return code;
+}
+void perform_post_request(int client_socket, const char *host, const char *path, const char *data)
+{
+    send_http_request(client_socket, host, path, "POST");
+    send(client_socket, data, strlen(data), 0);
+    char response_buffer[BUFFER_SIZE];
+    ssize_t bytes_received = recv(client_socket, response_buffer, BUFFER_SIZE, 0);
+    int response_code = get_response_code(response_buffer);
+    if (response_code == -1)
     {
-        exit(1);
+        printf("Failed to extract response code\n");
     }
     else
     {
-        printf("Connected to server\n");
+        printf("Status code: %d\n", response_code);
     }
-    send_request_and_save(socket_fd, get_request);
+}
+
+int main()
+{
+    int client_socket;
+    struct sockaddr_in server_addr;
+    const char *host = "www.example.com";
+    const char *path = "/index.html";
+    const char *post_data = "key1=value1&key2=value2"; // Example POST data
+
+    // Create socket
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == -1)
+    {
+        perror("Error creating client socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set up server address structure
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("93.184.216.34"); // IPv4 address of www.example.com
+    server_addr.sin_port = htons(PORT);
+
+    // Connect to server
+    if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+    {
+        perror("Error connecting to server");
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    }
+
+    // Perform GET request
+    // printf("Performing GET request...\n");
+    // perform_get_request(client_socket, host, path);
+
+    // Perform POST request
+    printf("\nPerforming POST request...\n");
+    perform_post_request(client_socket, host, path, post_data);
 
     // Close the socket
-    close(socket_fd);
+    close(client_socket);
 
     return 0;
 }

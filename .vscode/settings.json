@@ -46,6 +46,7 @@
         "inet.h": "c",
         "dirent.h": "c",
         "__locale": "c",
-        "netdb.h": "c"
+        "netdb.h": "c",
+        "unistd.h": "c"
     }
 }
