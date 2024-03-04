@@ -1,0 +1,11 @@
+HTTP/1.1 405 Method Not Allowed
+Allow: GET, HEAD
+Date: Mon, 04 Mar 2024 11:33:10 GMT
+Content-Type: text/html; charset=UTF-8
+Server: gws
+Content-Length: 1599
+X-XSS-Protection: 0
+X-Frame-Options: SAMEORIGIN
+X-Cache: MISS from localhost
+Connection: close
+

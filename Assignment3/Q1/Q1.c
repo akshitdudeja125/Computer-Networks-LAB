@@ -70,16 +70,12 @@ void generateResponse(const char *file_name, const char *file_ext, char *respons
 {
     const char *mime_type = generateMimeType(file_ext);
     char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
-    snprintf(header, BUFFER_SIZE, "HTTP/1.1 200 OK\r\n"
-                                  "Content-Type: %s\r\n\r\n",
-             mime_type);
+    snprintf(header, BUFFER_SIZE, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", mime_type);
 
     int file_fd = open(file_name, O_RDONLY);
     if (file_fd == -1)
     {
-        snprintf(response, BUFFER_SIZE, "HTTP/1.1 404 Not Found\r\n"
-                                        "Content-Type: text/plain\r\n\r\n"
-                                        "404 Not Found");
+        snprintf(response, BUFFER_SIZE, "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n404 Not Found");
         *response_len = strlen(response);
         return;
     }
@@ -122,7 +118,7 @@ void *handleClient(int client_socket)
                 char file_ext[32];
                 strcpy(file_ext, extractFileExtension(file_name));
 
-                char *response = (char *)malloc(BUFFER_SIZE * 2 * sizeof(char));
+                char *response = (char *)malloc(BUFFER_SIZE * sizeof(char));
                 size_t response_len;
                 generateResponse(file_name, file_ext, response, &response_len);
 
