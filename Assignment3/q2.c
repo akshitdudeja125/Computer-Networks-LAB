@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
+#include <stdbool.h>
 #define PORT 80
 #define BUFFER_SIZE 1024
+#define FILENAME "responsea.html"
+#define HEADER_FILENAME "headers.txt"
 
 void send_http_request(int client_socket, const char *host, const char *path, const char *method)
 {
@@ -29,16 +31,20 @@ void receive_http_response(int client_socket, const char *filename)
 {
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
-    int headers_done = 0;               // Flag to indicate when headers are done
-    FILE *file = fopen(filename, "wb"); // Open file for writing in binary mode
+    bool headers_done = false;
+
+    FILE *file = fopen(FILENAME, "wb");
     if (file == NULL)
     {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
-    else
+
+    FILE *header_file = fopen(HEADER_FILENAME, "w");
+    if (header_file == NULL)
     {
-        printf("File '%s' opened successfully\n", filename);
+        perror("Error opening header file");
+        exit(EXIT_FAILURE);
     }
 
     // Receive and write the response to the file
@@ -50,9 +56,11 @@ void receive_http_response(int client_socket, const char *filename)
             char *end_of_headers = strstr(buffer, "\r\n\r\n");
             if (end_of_headers != NULL)
             {
-                // Skip the headers and set the flag
+                // Write the headers to the header file
+                fwrite(buffer, 1, end_of_headers - buffer + 4, header_file);
+                headers_done = true;
+
                 fwrite(end_of_headers + 4, 1, bytes_received - (end_of_headers - buffer) - 4, file);
-                headers_done = 1;
             }
         }
         else
@@ -99,6 +107,9 @@ int main()
         printf("Host found.\n");
     }
 
+    // Print server address
+    printf("Server address: %s\n", inet_ntoa(*(struct in_addr *)he->h_addr_list[0]));
+    char *server_address = inet_ntoa(*(struct in_addr *)he->h_addr_list[0]);
     // Create socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1)
