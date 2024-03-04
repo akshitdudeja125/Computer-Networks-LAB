@@ -100,9 +100,8 @@ void generateResponse(const char *file_name, const char *file_ext, char *respons
     close(file_fd);
 }
 
-void *handleClient(void *arg)
+void *handleClient(int client_socket)
 {
-    int client_socket = *((int *)arg);
     char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 
     ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
@@ -135,12 +134,11 @@ void *handleClient(void *arg)
         }
     }
     close(client_socket);
-    free(arg);
     free(buffer);
     return NULL;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     int server_socket;
     struct sockaddr_in server_addr;
@@ -160,9 +158,7 @@ int main(int argc, char *argv[])
     }
     server_addr.sin_port = htons(PORT);
 
-    if (bind(server_socket,
-             (struct sockaddr *)&server_addr,
-             sizeof(server_addr)) < 0)
+    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -175,24 +171,34 @@ int main(int argc, char *argv[])
     }
 
     printf("Server listening on Port %d\n", PORT);
+
     while (1)
     {
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        int *client_socket = malloc(sizeof(int));
+        int client_socket;
 
-        if ((*client_socket = accept(server_socket,
-                                     (struct sockaddr *)&client_addr,
-                                     &client_addr_len)) < 0)
+        if ((client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len)) < 0)
         {
             perror("Accept Failed");
             continue;
         }
 
-        // create a new thread to handle client request
-        pthread_t thread_id;
-        pthread_create(&thread_id, NULL, handleClient, (void *)client_socket);
-        pthread_detach(thread_id);
+        pid_t pid = fork();
+        if (pid < 0)
+        {
+            perror("Fork Failed");
+            close(client_socket);
+            continue;
+        }
+        else if (pid == 0)
+        {
+            close(server_socket);
+            handleClient(client_socket);
+            exit(EXIT_SUCCESS);
+        }
+        else
+            close(client_socket);
     }
 
     close(server_socket);
