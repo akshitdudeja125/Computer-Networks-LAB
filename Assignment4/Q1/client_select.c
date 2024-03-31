@@ -15,7 +15,8 @@
 #define TIMEOUT_SEC 5  // Timeout in seconds
 #define TIMEOUT_USEC 0 // Timeout in microseconds
 // #define N_lost 3       // Every N_lost Data frame will be lost
-#define P 0.7 // Probability with which Data frame will be lost
+#define P 1.0                 // Probability with which Data frame will be lost
+#define FILENAME "sample.txt" // Name of the file to be sent
 
 int main()
 {
@@ -26,6 +27,16 @@ int main()
     char buffer[MAX_BUFFER_SIZE];
     socklen_t server_addr_size;
 
+    FILE *file;
+    ssize_t bytes_read;
+
+    file = fopen(FILENAME, "rb");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
     int frame_id = 0;
     Frame frame_send;
     Frame frame_recv;
@@ -33,7 +44,7 @@ int main()
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        perror("socket creation failed");
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -56,9 +67,20 @@ int main()
             frame_send.frame_kind = 1;
             frame_send.sq_no = frame_id;
 
-            printf("Enter Data: ");
-            scanf("%s", buffer);
-            strcpy(frame_send.packet.data, buffer);
+            bytes_read = fread(buffer, 1, MAX_BUFFER_SIZE, file);
+
+            if (bytes_read == 0)
+            {
+                printf("[+]File Sent\n");
+                break;
+            }
+            else if (bytes_read < 0)
+            {
+                perror("Error reading file");
+                exit(EXIT_FAILURE);
+            }
+            else
+                strcpy(frame_send.packet.data, buffer);
 
             double random_number = (double)rand() / RAND_MAX;
 
@@ -135,6 +157,7 @@ int main()
         printf("\n\n");
     }
 
+    fclose(file);
     close(sockfd);
     return 0;
 }

@@ -16,7 +16,8 @@
 #define TIMEOUT 5
 // #define N_lost 2 // Every N_lost Acknowledgement frame will be lost
 // #define N_delayed 4 // Every N_delayed Acknowledgement Frame will be delayed
-#define P 1.0 // Probability with which Acknowledgement frame will be lost
+#define P 1.0                        // Probability with which Acknowledgement frame will be lost
+#define FILENAME "received_file.txt" // Name of the file to save on the server
 
 int main()
 {
@@ -26,6 +27,16 @@ int main()
     struct sockaddr_in serverAddress, clientAddress;
     char buffer[MAX_BUFFER_SIZE];
     socklen_t client_addr_size;
+
+    FILE *file;
+    ssize_t bytes_received;
+
+    file = fopen(FILENAME, "wb");
+    if (file == NULL)
+    {
+        perror("Error creating file");
+        exit(EXIT_FAILURE);
+    }
 
     int start = 0;
     Frame frame_recv;
@@ -65,13 +76,14 @@ int main()
 
     while (1)
     {
-        int recv_size = recvfrom(sockfd, &frame_recv, sizeof(Frame), 0, (struct sockaddr *)&clientAddress, &client_addr_size);
+        int bytes_received = recvfrom(sockfd, &frame_recv, sizeof(Frame), 0, (struct sockaddr *)&clientAddress, &client_addr_size);
 
-        if (recv_size < 0)
+        if (bytes_received < 0)
         {
             printf("[-]Error Receiving Frame\n");
+            exit(EXIT_FAILURE);
         }
-        else if (recv_size > 0)
+        else if (bytes_received > 0)
         {
             if (frame_recv.frame_kind == 1)
             {
@@ -88,7 +100,14 @@ int main()
                             break;
                         }
 
-                        printf("[+]Frame %d Received: %s\n", frame_recv.sq_no, frame_recv.packet.data);
+                        printf("[+]Frame %d Received:\n", frame_recv.sq_no);
+
+                        if (fwrite(frame_recv.packet.data, 1, bytes_received, file) != bytes_received)
+                        {
+                            perror("Error writing to file");
+                            exit(EXIT_FAILURE);
+                        }
+
                         frames[i % N].packet.data[0] = '\0';
                     }
                     start = i;
@@ -103,7 +122,10 @@ int main()
                 }
                 else
                 {
-                    printf("[-]Frame Already Received\n");
+                    if (frame_recv.sq_no < start)
+                        printf("[-]Frame Already Received\n");
+                    if (frame_recv.sq_no >= start + N)
+                        printf("[-]Frame Out of Order\n");
                     frame_send.sq_no = start - 1;
                 }
 
@@ -136,6 +158,7 @@ int main()
         printf("\n\n");
     }
 
+    fclose(file);
     close(sockfd);
     return 0;
 }
