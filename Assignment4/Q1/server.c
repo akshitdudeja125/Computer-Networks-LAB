@@ -7,17 +7,20 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "utils.h"
+#include "../utils.h"
 
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
 #define TIMEOUT 5
-#define N_lost 2 // Every N_lost Acknowledgement frame will be lost
-#define N_delayed 4 // Every N_delayed Acknowledgement Frame will be delayed
+// #define N_lost 2 // Every N_lost Acknowledgement frame will be lost
+// #define N_delayed 4 // Every N_delayed Acknowledgement Frame will be delayed
+#define P 0.7 // Probability with which Acknowledgement frame will be lost
 
 int main()
 {
+    srand(time(NULL));
+
     int sockfd;
     struct sockaddr_in serverAddress, clientAddress;
     char buffer[MAX_BUFFER_SIZE];
@@ -49,6 +52,8 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    printf("[+]Server Started\n\n");
+
     client_addr_size = sizeof(clientAddress);
 
     while (1)
@@ -69,20 +74,23 @@ int main()
                 frame_send.frame_kind = 0;
                 frame_send.sq_no = frame_id;
 
-                if ((frame_id + 1) % N_delayed == 0)
-                    sleep(TIMEOUT + 1);
+                double random_number = (double)rand() / RAND_MAX;
 
-                if ((frame_id + 1) % N_lost)
+                // if ((frame_id + 1) % N_delayed == 0)
+                //     sleep(TIMEOUT + 1);
+
+                if (random_number <= P)
+                // if ((frame_id + 1) % N_lost)
                 {
                     sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&clientAddress, client_addr_size);
                     printf("[+]Ack Send\n");
                 }
-                
+
                 frame_id++;
             }
-            else
+            else if (frame_recv.frame_kind == 1 && frame_recv.sq_no < frame_id)
             {
-                printf("[-]Older Frame Received\n");
+                printf("[-]Duplicate Frame Received\n");
 
                 frame_send.frame_kind = 0;
                 frame_send.sq_no = frame_id - 1;
@@ -90,12 +98,21 @@ int main()
                 sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&clientAddress, client_addr_size);
                 printf("[+]Ack Send\n");
             }
+            else if (frame_recv.frame_kind == 0)
+            {
+                printf("[-]Why is Client sending Acknowledgement Frame???\n");
+            }
+            else
+            {
+                printf("[-]Invalid Frame Received\n");
+            }
         }
         else
         {
             printf("[-]Connection Closed!\n");
             break;
         }
+        printf("\n\n");
     }
 
     close(sockfd);

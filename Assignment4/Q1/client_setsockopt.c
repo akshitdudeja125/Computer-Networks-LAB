@@ -6,16 +6,19 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include "utils.h"
+#include "../utils.h"
 
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
 #define IP "127.0.0.1"
 #define TIMEOUT 5
-#define N_lost 3 // Every N_lost Data frame will be lost
+// #define N_lost 3 // Every N_lost Data frame will be lost
+#define P 0.7 // Probability with which Data frame will be lost
 
 int main()
 {
+    srand(time(NULL));
+
     int sockfd;
     struct sockaddr_in serverAddress;
     char buffer[MAX_BUFFER_SIZE];
@@ -52,6 +55,8 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    int server_addr_size = sizeof(serverAddress);
+
     while (1)
     {
 
@@ -64,22 +69,24 @@ int main()
             scanf("%s", buffer);
             strcpy(frame_send.packet.data, buffer);
 
-            if ((frame_id + 1) % N_lost)
+            double random_number = (double)rand() / RAND_MAX;
+
+            // if ((frame_id + 1) % N_lost)
+            if (random_number <= P)
             {
-                sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
-                printf("[+]Frame Send\n");
+                sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, server_addr_size);
+                printf("[+]Frame Sent\n");
             }
         }
 
-        int server_addr_size = sizeof(serverAddress);
         int recv_size = recvfrom(sockfd, &frame_recv, sizeof(frame_recv), 0, (struct sockaddr *)&serverAddress, &server_addr_size);
 
         if (recv_size < 0)
         {
             printf("[-]Timeout: Ack Not Received\n");
             ack_recv = false;
-            sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
-            printf("[+]Frame Resend\n");
+            sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, server_addr_size);
+            printf("[+]Frame Resent\n");
         }
         else if (recv_size > 0)
         {
@@ -100,6 +107,7 @@ int main()
             printf("[-]Connection Closed\n");
             break;
         }
+        printf("\n\n");
     }
 
     close(sockfd);
