@@ -59,6 +59,9 @@ int main()
 
     server_addr_size = sizeof(serverAddress);
 
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     while (1)
     {
         if (ack_recv == true)
@@ -155,5 +158,20 @@ int main()
 
     fclose(file);
     close(sockfd);
+
+    gettimeofday(&end_time, NULL);
+
+    fclose(file);
+    close(sockfd);
+
+    long seconds = end_time.tv_sec - start_time.tv_sec;
+    long microseconds = end_time.tv_usec - start_time.tv_usec;
+    if (microseconds < 0)
+    {
+        seconds--;
+        microseconds += 1000000;
+    }
+    printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+
     return 0;
 }

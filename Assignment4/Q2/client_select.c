@@ -71,6 +71,9 @@ int main()
     int total_frames = (int)ceil((double)ftell(file) / (double)MAX_BUFFER_SIZE);
     fseek(file, 0, SEEK_SET);
 
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     while (1)
     {
         for (int i = next; i < start + N && start < total_frames; i++)
@@ -198,5 +201,20 @@ int main()
 
     fclose(file);
     close(sockfd);
+
+    gettimeofday(&end_time, NULL);
+
+    fclose(file);
+    close(sockfd);
+
+    long seconds = end_time.tv_sec - start_time.tv_sec;
+    long microseconds = end_time.tv_usec - start_time.tv_usec;
+    if (microseconds < 0)
+    {
+        seconds--;
+        microseconds += 1000000;
+    }
+    printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+
     return 0;
 }
