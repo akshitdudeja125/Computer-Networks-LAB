@@ -67,9 +67,13 @@ int main()
 
     server_addr_size = sizeof(serverAddress);
 
+    fseek(file, 0, SEEK_END);
+    int total_frames = (int)ceil((double)ftell(file) / (double)MAX_BUFFER_SIZE);
+    fseek(file, 0, SEEK_SET);
+
     while (1)
     {
-        for (int i = next; i < start + N; i++)
+        for (int i = next; i < start + N && start < total_frames; i++)
         {
             if (frames[i % N].packet.data[0] != '\0')
             {
@@ -107,11 +111,6 @@ int main()
                 printf("[+]Frame %d Sent\n", i);
             }
             count++;
-        }
-
-        if (bytes_read == 0)
-        {
-            break;
         }
 
         next = start + N;
@@ -187,6 +186,11 @@ int main()
                     }
                 }
             }
+        }
+
+        if (start >= total_frames)
+        {
+            break;
         }
 
         printf("\n");

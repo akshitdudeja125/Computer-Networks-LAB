@@ -71,7 +71,6 @@ int main()
             if (bytes_read == 0)
             {
                 printf("[+]File Sent\n");
-                break;
             }
             else if (bytes_read < 0)
             {
@@ -127,6 +126,8 @@ int main()
                         printf("[+]Ack Received\n");
                         ack_recv = true;
                         frame_id++;
+                        if (bytes_read == 0)
+                            break;
                     }
                     else if (frame_recv.frame_kind == 0 && frame_recv.sq_no < frame_id)
                     {
