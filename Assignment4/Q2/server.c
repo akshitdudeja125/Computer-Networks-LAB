@@ -102,7 +102,7 @@ int main()
 
                         printf("[+]Frame %d Received:\n", frame_recv.sq_no);
 
-                        if (fwrite(frame_recv.packet.data, 1, bytes_received, file) != bytes_received)
+                        if (fwrite(frames[i % N].packet.data, 1, MAX_BUFFER_SIZE, file) != MAX_BUFFER_SIZE)
                         {
                             perror("Error writing to file");
                             exit(EXIT_FAILURE);
