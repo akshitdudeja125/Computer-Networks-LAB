@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <math.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -11,7 +12,7 @@
 
 #define PORT 8080
 #define MAX_BUFFER_SIZE 1024
-#define N 3 // Sender Window Size
+// #define N 3 // Sender Window Size
 #define IP "127.0.0.1"
 #define TIMEOUT_SEC 3  // Timeout in seconds
 #define TIMEOUT_USEC 0 // Timeout in microseconds
@@ -19,7 +20,7 @@
 #define P 1.0                 // Probability with which Data frame will be lost
 #define FILENAME "sample.txt" // Name of the file to be sent
 
-int main()
+int func(int N)
 {
     srand(time(NULL));
 
@@ -68,7 +69,7 @@ int main()
     server_addr_size = sizeof(serverAddress);
 
     fseek(file, 0, SEEK_END);
-    int total_frames = (int)ceil((double)ftell(file) / (double)MAX_BUFFER_SIZE);
+    int total_frames = (int)((double)ftell(file) / (double)MAX_BUFFER_SIZE) + ftell(file) % MAX_BUFFER_SIZE ? 2 : 1;
     fseek(file, 0, SEEK_SET);
 
     struct timeval start_time, end_time;
@@ -80,7 +81,7 @@ int main()
         {
             if (frames[i % N].packet.data[0] != '\0')
             {
-                printf("\n[+]Resending Frame %d\n", i);
+                // printf("\n[+]Resending Frame %d\n", i);
             }
             else
             {
@@ -91,8 +92,8 @@ int main()
 
                 if (bytes_read == 0)
                 {
-                    printf("[+]File Sent\n");
-                    break;
+                    // printf("\n[+]File Read Complete\n");
+                    strcpy(frames[i % N].packet.data, "EOF");
                 }
                 else if (bytes_read < 0)
                 {
@@ -102,7 +103,7 @@ int main()
                 else
                     strcpy(frames[i % N].packet.data, buffer);
 
-                printf("[+]Sending Frame %d\n", i);
+                // printf("[+]Sending Frame %d\n", i);
             }
 
             double random_number = (double)rand() / RAND_MAX;
@@ -111,7 +112,7 @@ int main()
             if (random_number <= P)
             {
                 sendto(sockfd, &frames[i % N], sizeof(Frame), 0, (struct sockaddr *)&serverAddress, server_addr_size);
-                printf("[+]Frame %d Sent\n", i);
+                // printf("[+]Frame %d Sent\n", i);
             }
             count++;
         }
@@ -137,7 +138,7 @@ int main()
             }
             else if (select_result == 0)
             {
-                printf("\n[-]Timeout: Ack %d Not Received\n", start);
+                // printf("\n[-]Timeout: Ack %d Not Received\n", start);
                 next = start;
                 break;
             }
@@ -156,7 +157,7 @@ int main()
                     {
                         if (frame_recv.frame_kind == 0)
                         {
-                            printf("\n[+]Ack %d Received\n", frame_recv.sq_no);
+                            // printf("\n[+]Ack %d Received\n", frame_recv.sq_no);
 
                             if (frame_recv.sq_no >= start)
                             {
@@ -175,16 +176,16 @@ int main()
                         }
                         else if (frame_recv.frame_kind == 1)
                         {
-                            printf("\n[-]Why is Server sending Data Frame???\n");
+                            // printf("\n[-]Why is Server sending Data Frame???\n");
                         }
                         else
                         {
-                            printf("\n[-]Invalid Frame Received\n");
+                            // printf("\n[-]Invalid Frame Received\n");
                         }
                     }
                     else
                     {
-                        printf("\n[-]Connection Closed\n");
+                        // printf("\n[-]Connection Closed\n");
                         break;
                     }
                 }
@@ -196,16 +197,13 @@ int main()
             break;
         }
 
-        printf("\n");
+        // printf("\n");
     }
 
     fclose(file);
     close(sockfd);
 
     gettimeofday(&end_time, NULL);
-
-    fclose(file);
-    close(sockfd);
 
     long seconds = end_time.tv_sec - start_time.tv_sec;
     long microseconds = end_time.tv_usec - start_time.tv_usec;
@@ -214,7 +212,19 @@ int main()
         seconds--;
         microseconds += 1000000;
     }
-    printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
-
+    // //printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+    double final_time = seconds * 1000000.0 + microseconds;
+    printf("%d,%lf\n", N, final_time);
     return 0;
+}
+
+int main()
+{
+    int Ns[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    for (int i = 0; i < sizeof(Ns) / sizeof(int); i++)
+    {
+        // ////printf("\n[+]N = %lf\n", Ns[i]);
+        func(Ns[i]);
+        // ////printf("\n\n");
+    }
 }

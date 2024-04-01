@@ -15,10 +15,10 @@
 #define TIMEOUT_SEC 5  // Timeout in seconds
 #define TIMEOUT_USEC 0 // Timeout in microseconds
 // #define N_lost 3       // Every N_lost Data frame will be lost
-#define P 1.0                 // Probability with which Data frame will be lost
+// #define P 1.0                 // Probability with which Data frame will be lost
 #define FILENAME "sample.txt" // Name of the file to be sent
 
-int main()
+int func(double P)
 {
     srand(time(NULL));
 
@@ -74,7 +74,8 @@ int main()
 
             if (bytes_read == 0)
             {
-                printf("[+]File Sent\n");
+                printf("\n[+]File Read Complete\n");
+                strcpy(frame_send.packet.data, "EOF");
             }
             else if (bytes_read < 0)
             {
@@ -161,10 +162,10 @@ int main()
         printf("\n\n");
     }
 
-    gettimeofday(&end_time, NULL);
-
     fclose(file);
     close(sockfd);
+
+    gettimeofday(&end_time, NULL);
 
     long seconds = end_time.tv_sec - start_time.tv_sec;
     long microseconds = end_time.tv_usec - start_time.tv_usec;
@@ -173,7 +174,21 @@ int main()
         seconds--;
         microseconds += 1000000;
     }
-    printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+    // printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+    // get time in miliseconds
+    double final_time = seconds + microseconds / 1000000.0;
+    printf("%lf,%lf\n", 1 - P, final_time);
 
     return 0;
+}
+
+int main()
+{
+    double p_values[] = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
+    for (int i = 0; i < sizeof(p_values) / sizeof(int); i++)
+    {
+        // printf("\n[+]P = %lf\n", p_values[i]);
+        func(p_values[i]);
+        // printf("\n\n");
+    }
 }

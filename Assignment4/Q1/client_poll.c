@@ -14,10 +14,10 @@
 #define IP "127.0.0.1"
 #define TIMEOUT 5
 // #define N_lost 3       // Every N_lost Data frame will be lost
-#define P 1.0                 // Probability with which Data frame will be lost
+// #define P 1.0                 // Probability with which Data frame will be lost
 #define FILENAME "sample.txt" // Name of the file to be sent
 
-int main()
+int func(double P)
 {
     srand(time(NULL));
 
@@ -73,7 +73,8 @@ int main()
 
             if (bytes_read == 0)
             {
-                printf("[+]File Sent\n");
+                // printf("\n[+]File Read Complete\n");
+                strcpy(frame_send.packet.data, "EOF");
             }
             else if (bytes_read < 0)
             {
@@ -89,7 +90,7 @@ int main()
             if (random_number <= P)
             {
                 sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, server_addr_size);
-                printf("[+]Frame Sent\n");
+                // printf("[+]Frame Sent\n");
             }
         }
 
@@ -106,10 +107,10 @@ int main()
         }
         else if (poll_result == 0)
         {
-            printf("[-]Timeout: Ack Not Received\n");
+            // printf("[-]Timeout: Ack Not Received\n");
             ack_recv = false;
             sendto(sockfd, &frame_send, sizeof(Frame), 0, (struct sockaddr *)&serverAddress, server_addr_size);
-            printf("[+]Frame Resent\n");
+            // printf("[+]Frame Resent\n");
         }
         else
         {
@@ -126,7 +127,7 @@ int main()
                 {
                     if (frame_recv.frame_kind == 0 && frame_recv.sq_no == frame_id)
                     {
-                        printf("[+]Ack Received\n");
+                        // printf("[+]Ack Received\n");
                         ack_recv = true;
                         frame_id++;
                         if (bytes_read == 0)
@@ -134,35 +135,32 @@ int main()
                     }
                     else if (frame_recv.frame_kind == 0 && frame_recv.sq_no < frame_id)
                     {
-                        printf("[-]Duplicate Ack Received\n");
+                        // printf("[-]Duplicate Ack Received\n");
                         ack_recv = false;
                     }
                     else if (frame_recv.frame_kind == 1)
                     {
-                        printf("[-]Why is Server sending Data Frame???\n");
+                        // printf("[-]Why is Server sending Data Frame???\n");
                     }
                     else
                     {
-                        printf("[-]Invalid Frame Received\n");
+                        // printf("[-]Invalid Frame Received\n");
                     }
                 }
                 else
                 {
-                    printf("[-]Connection Closed\n");
+                    // printf("[-]Connection Closed\n");
                     break;
                 }
             }
         }
-        printf("\n\n");
+        // printf("\n\n");
     }
 
     fclose(file);
     close(sockfd);
 
     gettimeofday(&end_time, NULL);
-
-    fclose(file);
-    close(sockfd);
 
     long seconds = end_time.tv_sec - start_time.tv_sec;
     long microseconds = end_time.tv_usec - start_time.tv_usec;
@@ -171,7 +169,21 @@ int main()
         seconds--;
         microseconds += 1000000;
     }
-    printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+    // printf("Total time taken: %ld seconds and %ld microseconds\n", seconds, microseconds);
+    // get time in miliseconds
+    double final_time = seconds + microseconds / 1000000.0;
+    printf("%lf,%lf\n", 1 - P, final_time);
 
     return 0;
+}
+
+int main()
+{
+    double p_values[] = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
+    for (int i = 0; i < sizeof(p_values) / sizeof(int); i++)
+    {
+        // printf("\n[+]P = %lf\n", p_values[i]);
+        func(p_values[i]);
+        // printf("\n\n");
+    }
 }

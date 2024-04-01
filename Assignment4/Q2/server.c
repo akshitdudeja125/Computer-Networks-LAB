@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -39,6 +40,7 @@ int main()
     }
 
     int start = 0;
+    bool comp = false;
     Frame frame_recv;
     Frame frame_send;
     Frame frames[N];
@@ -102,7 +104,12 @@ int main()
 
                         printf("[+]Frame %d Received:\n", frame_recv.sq_no);
 
-                        if (fwrite(frames[i % N].packet.data, 1, MAX_BUFFER_SIZE, file) != MAX_BUFFER_SIZE)
+                        if (frame_recv.packet.data[0] == 'E' && frame_recv.packet.data[1] == 'O' && frame_recv.packet.data[2] == 'F')
+                        {
+                            printf("[+]File Transfer Complete\n");
+                            comp = true;
+                        }
+                        else if (fwrite(frames[i % N].packet.data, 1, MAX_BUFFER_SIZE, file) != MAX_BUFFER_SIZE)
                         {
                             perror("Error writing to file");
                             exit(EXIT_FAILURE);
@@ -110,7 +117,8 @@ int main()
 
                         frames[i % N].packet.data[0] = '\0';
                     }
-                    start = i;
+                    start = (comp) ? 0 : i;
+                    comp = false;
 
                     frame_send.sq_no = i - 1;
                 }

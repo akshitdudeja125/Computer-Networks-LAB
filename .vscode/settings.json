@@ -48,6 +48,7 @@
     "__locale": "c",
     "netdb.h": "c",
     "unistd.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "types.h": "c"
   }
 }
