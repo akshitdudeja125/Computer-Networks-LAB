@@ -29,10 +29,6 @@ $ns duplex-link $n2 $n3 10Mb 2ms DropTail
 $ns duplex-link $n3 $n1 10Mb 2ms DropTail
 $ns duplex-link $n3 $n1 10Mb 2ms DropTail
 
-$ns duplex-link-op $n0 $n3 orient right-up
-$ns duplex-link-op $n2 $n3 orient right-down
-$ns duplex-link-op $n3 $n2 orient right
-
 # FTP connection between A to B via D.
 set tcp1 [new Agent/TCP]
 $ns attach-agent $n0 $tcp1
